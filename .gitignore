@@ -1,0 +1,47 @@
+# Datos y modelos
+data/
+modelos/
+ml/mediapipe_modelos/
+*.npz
+*.npy
+*.mp4
+*.mov
+*.avi
+*.7z
+*.zip
+*.keras
+*.h5
+*.tflite
+!app/assets/modelos/.gitkeep
+
+# Python
+__pycache__/
+*.py[cod]
+.venv/
+venv/
+.pytest_cache/
+.ipynb_checkpoints/
+
+# Flutter / Dart
+app/.dart_tool/
+app/.flutter-plugins
+app/.flutter-plugins-dependencies
+app/build/
+app/.packages
+app/**/GeneratedPluginRegistrant.*
+app/android/.gradle/
+app/android/local.properties
+app/android/app/google-services.json
+app/ios/Pods/
+app/ios/Runner/GoogleService-Info.plist
+
+# Credenciales de Google Cloud
+*.json.key
+service-account*.json
+.env
+
+# Sistema / editores
+.DS_Store
+Thumbs.db
+.idea/
+.vscode/
