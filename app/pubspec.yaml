@@ -35,6 +35,10 @@ dependencies:
   # Use with the CupertinoIcons class for iOS style icons.
   cupertino_icons: ^1.0.8
   camera: ^0.12.1
+  # Guarda los ajustes (tamaño de letra, voz, tema) en el teléfono.
+  shared_preferences: ^2.3.2
+  # Maneja los permisos de la aplicación.
+  permission_handler: ^12.0.1
 
 dev_dependencies:
   flutter_test:
@@ -57,6 +61,25 @@ flutter:
   # included with your application, so that you can use the icons in
   # the material Icons class.
   uses-material-design: true
+
+  # Tipografía del diseño (Plus Jakarta Sans), OPCIONAL.
+  # Descarga los .ttf de https://fonts.google.com/specimen/Plus+Jakarta+Sans,
+  # ponlos en app/assets/fonts/ y quita el # de las líneas de abajo.
+  # Se incluyen en la app para que se vea igual SIN internet.
+  # Mientras no estén, la app usa la fuente por defecto del sistema.
+  #
+  # fonts:
+  #   - family: PlusJakartaSans
+  #     fonts:
+  #       - asset: assets/fonts/PlusJakartaSans-Regular.ttf
+  #       - asset: assets/fonts/PlusJakartaSans-Medium.ttf
+  #         weight: 500
+  #       - asset: assets/fonts/PlusJakartaSans-SemiBold.ttf
+  #         weight: 600
+  #       - asset: assets/fonts/PlusJakartaSans-Bold.ttf
+  #         weight: 700
+  #       - asset: assets/fonts/PlusJakartaSans-ExtraBold.ttf
+  #         weight: 800
 
   # To add assets to your application, add an assets section, like this:
   # assets:

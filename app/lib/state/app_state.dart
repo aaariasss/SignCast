@@ -1,0 +1,190 @@
+import 'dart:async';
+
+import 'package:flutter/widgets.dart';
+import 'package:shared_preferences/shared_preferences.dart';
+
+import '../models/ajustes.dart';
+import '../models/estado_deteccion.dart';
+import '../models/frase_historial.dart';
+import '../services/permiso_camara.dart';
+import '../services/permiso_camara_sistema.dart';
+import '../services/reconocedor.dart';
+import '../services/reconocedor_falso.dart';
+import '../services/voz.dart';
+import '../theme/paleta.dart';
+
+const String _kTamano = 'ajustes_tamano';
+const String _kVoz = 'ajustes_voz_activa';
+const String _kVelocidad = 'ajustes_velocidad_voz';
+const String _kOscuro = 'ajustes_oscuro';
+
+/// Estado compartido de toda la app: ajustes, reconocimiento e historial.
+class AppState extends ChangeNotifier {
+  AppState({
+    required this.reconocedor,
+    required this.voz,
+    this.permisoCamara = const PermisoCamaraNulo(),
+    this._prefs,
+  });
+
+  /// Crea el estado y carga los ajustes guardados.
+  static Future<AppState> crear({
+    Reconocedor? reconocedor,
+    Voz? voz,
+    PermisoCamara? permisoCamara,
+  }) async {
+    final prefs = await SharedPreferences.getInstance();
+    final estado = AppState(
+      reconocedor: reconocedor ?? ReconocedorFalso(),
+      voz: voz ?? const VozNula(),
+      permisoCamara: permisoCamara ?? const PermisoCamaraSistema(),
+      prefs: prefs,
+    );
+    estado._cargar();
+    return estado;
+  }
+
+  final Reconocedor reconocedor;
+  final Voz voz;
+  final PermisoCamara permisoCamara;
+  final SharedPreferences? _prefs;
+
+  Ajustes _ajustes = const Ajustes();
+  EstadoDeteccion _estado = EstadoDeteccion.sinManos;
+  List<String> _glosas = const [];
+  String _fraseActual = '';
+  final List<FraseHistorial> _historial = [];
+  StreamSubscription<EventoReconocimiento>? _suscripcion;
+
+  Ajustes get ajustes => _ajustes;
+  EstadoDeteccion get estado => _estado;
+  List<String> get glosas => _glosas;
+  String get fraseActual => _fraseActual;
+  List<FraseHistorial> get historial => List.unmodifiable(_historial);
+  Paleta get paleta => _ajustes.oscuro ? Paleta.oscura : Paleta.clara;
+
+  // ---------------------------------------------------------------- ajustes
+
+  void _cargar() {
+    final p = _prefs;
+    if (p == null) return;
+    _ajustes = Ajustes(
+      tamano: (p.getDouble(_kTamano) ?? 26)
+          .clamp(Ajustes.tamanoMin, Ajustes.tamanoMax)
+          .toDouble(),
+      vozActiva: p.getBool(_kVoz) ?? true,
+      velocidadVoz: (p.getDouble(_kVelocidad) ?? 1.0)
+          .clamp(Ajustes.velocidadMin, Ajustes.velocidadMax)
+          .toDouble(),
+      oscuro: p.getBool(_kOscuro) ?? true,
+    );
+  }
+
+  Future<void> _guardar() async {
+    final p = _prefs;
+    if (p == null) return;
+    await p.setDouble(_kTamano, _ajustes.tamano);
+    await p.setBool(_kVoz, _ajustes.vozActiva);
+    await p.setDouble(_kVelocidad, _ajustes.velocidadVoz);
+    await p.setBool(_kOscuro, _ajustes.oscuro);
+  }
+
+  Future<void> _aplicar(Ajustes nuevos) async {
+    _ajustes = nuevos;
+    notifyListeners();
+    await _guardar();
+  }
+
+  Future<void> cambiarTamano(double valor) => _aplicar(_ajustes.copiar(
+        tamano: valor.clamp(Ajustes.tamanoMin, Ajustes.tamanoMax).toDouble(),
+      ));
+
+  Future<void> cambiarVelocidad(double valor) {
+    final redondeada = (valor * 10).round() / 10;
+    return _aplicar(_ajustes.copiar(
+      velocidadVoz: redondeada
+          .clamp(Ajustes.velocidadMin, Ajustes.velocidadMax)
+          .toDouble(),
+    ));
+  }
+
+  Future<void> alternarVoz() =>
+      _aplicar(_ajustes.copiar(vozActiva: !_ajustes.vozActiva));
+
+  Future<void> cambiarOscuro(bool oscuro) =>
+      _aplicar(_ajustes.copiar(oscuro: oscuro));
+
+  // ----------------------------------------------------------- reconocimiento
+
+  /// Empieza a escuchar al reconocedor. Se llama al entrar a la app principal.
+  void iniciarReconocimiento() {
+    _suscripcion ??= reconocedor.eventos.listen(aplicarEvento);
+    reconocedor.iniciar();
+  }
+
+  void detenerReconocimiento() {
+    reconocedor.detener();
+    voz.detener();
+  }
+
+  /// Procesa un evento del reconocedor. Es público para poder probarlo.
+  void aplicarEvento(EventoReconocimiento evento) {
+    _estado = evento.estado;
+    _glosas = evento.glosas;
+    final frase = evento.frase;
+    if (evento.estado == EstadoDeteccion.traduciendo &&
+        frase != null &&
+        frase.isNotEmpty) {
+      _fraseActual = frase;
+      _historial.insert(0, FraseHistorial(hora: DateTime.now(), texto: frase));
+      if (_ajustes.vozActiva) {
+        voz.hablar(frase, velocidad: _ajustes.velocidadVoz);
+      }
+    }
+    notifyListeners();
+  }
+
+  /// Vuelve a leer la frase actual (acción explícita del usuario: suena aunque
+  /// la lectura automática esté apagada).
+  Future<void> repetir() => reproducir(_fraseActual);
+
+  Future<void> reproducir(String texto) async {
+    if (texto.isEmpty) return;
+    await voz.hablar(texto, velocidad: _ajustes.velocidadVoz);
+  }
+
+  @override
+  void dispose() {
+    _suscripcion?.cancel();
+    reconocedor.liberar();
+    super.dispose();
+  }
+}
+
+/// Hace llegar el [AppState] a cualquier widget.
+class AppScope extends InheritedNotifier<AppState> {
+  const AppScope({
+    super.key,
+    required AppState estado,
+    required super.child,
+  }) : super(notifier: estado);
+
+  /// Lee el estado y reconstruye el widget cuando cambia.
+  static AppState of(BuildContext context) {
+    final scope = context.dependOnInheritedWidgetOfExactType<AppScope>();
+    assert(scope != null, 'Falta un AppScope arriba en el árbol de widgets');
+    return scope!.notifier!;
+  }
+
+  /// Lee el estado sin reconstruir (sirve en initState).
+  static AppState leer(BuildContext context) {
+    final scope = context.getInheritedWidgetOfExactType<AppScope>();
+    assert(scope != null, 'Falta un AppScope arriba en el árbol de widgets');
+    return scope!.notifier!;
+  }
+}
+
+extension ContextoApp on BuildContext {
+  AppState get app => AppScope.of(this);
+  Paleta get paleta => AppScope.of(this).paleta;
+}
