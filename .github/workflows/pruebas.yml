@@ -20,3 +20,17 @@ jobs:
           cache-dependency-path: ml/requirements.txt
       - run: pip install -r requirements.txt
       - run: python -m pytest -q
+  
+  app:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: app
+    steps:
+      - uses: actions/checkout@v4
+      - uses: subosito/flutter-action@v2
+        with:
+          channel: stable
+          cache: true
+      - run: flutter pub get
+      - run: flutter test
