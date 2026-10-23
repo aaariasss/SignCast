@@ -13,7 +13,7 @@ from . import config as C
 from .muestras import etiquetas, guardar
 from .puntos_clave import Extractor, apilar, caracteristicas_mano
 
-PATRON_VIDEO = re.compile(r"S(\d+)-(.+?)-(frontal|profile)-(\d+)", re.IGNORECASE)
+PATRON_VIDEO = re.compile(r"S(\d+)-(.+?)-(frontal|profile)[-.](\d+)", re.IGNORECASE)
 PATRON_PERSONA = re.compile(r"(?:^|[^A-Za-z])S(\d{1,3})(?:[^0-9]|$)")
 EXT_IMAGEN = {".jpg", ".jpeg", ".png"}
 
@@ -83,6 +83,7 @@ def estaticas(origen: Path, max_por_letra: int, semilla: int):
     rng = random.Random(semilla)
     X, y, personas, divisiones = [], [], [], []
     sin_mano = 0
+    sin_mano_letra: dict[str, int] = defaultdict(int)
     with Extractor(modo="imagen", con_pose=False, con_cara=False, num_manos=1) as ext:
         for (letra, division), rutas in sorted(grupos.items()):
             rng.shuffle(rutas)
@@ -94,6 +95,7 @@ def estaticas(origen: Path, max_por_letra: int, semilla: int):
                 mano = cuadro.mano_izq if not np.isnan(cuadro.mano_izq).all() else cuadro.mano_der
                 if np.isnan(mano).all():
                     sin_mano += 1
+                    sin_mano_letra[letra] += 1
                     continue
                 m = PATRON_PERSONA.search(ruta.stem)
                 X.append(caracteristicas_mano(mano))
@@ -105,7 +107,9 @@ def estaticas(origen: Path, max_por_letra: int, semilla: int):
     C.DIR_PROCESADO.mkdir(parents=True, exist_ok=True)
     destino = C.DIR_PROCESADO / "alfabeto_publico.npz"
     np.savez_compressed(destino, X=np.array(X, np.float32), y=np.array(y),
-                        personas=np.array(personas), divisiones=np.array(divisiones))
+                        personas=np.array(personas), divisiones=np.array(divisiones),
+                        sin_mano_letras=np.array(list(sin_mano_letra)),
+                        sin_mano_valores=np.array(list(sin_mano_letra.values()), np.int32))
     print(f"Listo: {len(X)} ejemplos ({sin_mano} sin mano detectada) -> {destino}")
 
 

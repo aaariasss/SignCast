@@ -1,5 +1,6 @@
 # Datos y modelos
-data/
+data/*
+!data/README.md
 modelos/
 ml/mediapipe_modelos/
 *.npz
