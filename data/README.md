@@ -1,6 +1,6 @@
 # Datos de SignCast
 
-Esta carpeta **no se sube al repo** (solo este README). Los archivos generados viven en Cloud Storage.
+Esta carpeta **no se sube al repo** (solo este README). Los archivos generados se comparten en una carpeta de Google Drive (ver [docs/nube.md](../docs/nube.md)).
 
 ## Dataset público de LSM (CICESE)
 
@@ -13,9 +13,10 @@ López-Nava et al., 2026 · 27 letras, 40 personas · CC-BY 4.0. El dataset solo
 
 ### Dónde están los archivos
 
-- Cloud Storage: `gs://<BUCKET>/<RUTA>/` (completar al subir)
-  - `procesado/alfabeto_publico.npz` (estáticas)
-  - `raw/publico/` (dinámicas, un `.npz` por video)
+En la [carpeta de Drive del equipo](https://drive.google.com/drive/folders/1Qy4yopwbec2VXHipS9UW5C6UOsja2yuw?usp=drive_link) (acceso restringido):
+
+- `procesado/alfabeto_publico.npz`: letras estáticas (21).
+- `raw/publico.zip`: letras dinámicas (6), un `.npz` por video. Se descomprime dentro de `data/raw/`.
 
 ### Cómo regenerarlos
 
@@ -30,6 +31,8 @@ python -m signcast.contar_publico --salida ../data/README.md
 ```
 
 ### Conteo por letra
+
+Estáticas: hasta 3000 imágenes por letra y por división (entrenamiento y prueba), elegidas al azar; "sin mano detectada" son imágenes donde MediaPipe no encontró la mano. Dinámicas: videos de la vista frontal.
 
 <!-- conteo:inicio -->
 | Letra | Tipo | Ejemplos | Sin mano detectada |
