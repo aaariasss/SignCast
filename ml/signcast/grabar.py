@@ -39,6 +39,8 @@ def main():
     g.add_argument("--glosa", help="Seña aislada, p. ej. HOLA")
     g.add_argument("--frase", help='Frase en glosas, p. ej. "YO NO ENTENDER"')
     p.add_argument("--repeticiones", type=int, default=20)
+    p.add_argument("--segundos", type=float,
+                   help=f"Duración de cada toma (por defecto {SEGUNDOS_SENA} s por seña y {SEGUNDOS_FRASE} s por frase)")
     p.add_argument("--camara", type=int, default=0)
     p.add_argument("--fuente", default="equipo")
     a = p.parse_args()
@@ -50,7 +52,7 @@ def main():
         raise SystemExit(f"Glosas fuera de vocabulario.csv: {desconocidas}. Agrégalas primero.")
 
     persona = a.persona.lower()
-    duracion = SEGUNDOS_FRASE if len(glosas) > 1 else SEGUNDOS_SENA
+    duracion = a.segundos or (SEGUNDOS_FRASE if len(glosas) > 1 else SEGUNDOS_SENA)
     cap = cv2.VideoCapture(a.camara)
     cap.set(cv2.CAP_PROP_FPS, C.FPS_OBJETIVO)
     if not cap.isOpened():
