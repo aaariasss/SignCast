@@ -44,6 +44,12 @@ kotlin {
     }
 }
 
+dependencies {
+    // MediaPipe Tasks (manos, pose y rostro) para el issue #23. Versión fija
+    // para que la compilación sea reproducible.
+    implementation("com.google.mediapipe:tasks-vision:1.1.1")
+}
+
 flutter {
     source = "../.."
 }

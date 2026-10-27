@@ -1,14 +1,33 @@
 import 'package:flutter/material.dart';
 
+import '../services/detector_puntos.dart';
 import '../state/app_state.dart';
 import '../widgets/camara_fondo.dart';
 import '../widgets/hoja_subtitulos.dart';
 import '../widgets/logo.dart';
 import '../widgets/pildora_estado.dart';
 
+/// Muestra los puntos de MediaPipe sobre la cámara (issue #23). Está apagado
+/// por defecto; para probarlo: `flutter run --dart-define=PUNTOS=true`.
+const bool _puntosActivos = bool.fromEnvironment('PUNTOS');
+
 /// Pantalla principal: cámara, estado de detección y subtítulos.
-class TraductorScreen extends StatelessWidget {
+class TraductorScreen extends StatefulWidget {
   const TraductorScreen({super.key});
+
+  @override
+  State<TraductorScreen> createState() => _TraductorScreenState();
+}
+
+class _TraductorScreenState extends State<TraductorScreen> {
+  late final DetectorPuntos? _detector =
+      _puntosActivos ? DetectorPuntosNativo() : null;
+
+  @override
+  void dispose() {
+    _detector?.liberar();
+    super.dispose();
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -17,7 +36,7 @@ class TraductorScreen extends StatelessWidget {
     return Stack(
       fit: StackFit.expand,
       children: [
-        const CamaraFondo(),
+        CamaraFondo(detector: _detector, mostrarFps: _detector != null),
         SafeArea(
           child: Padding(
             padding: const EdgeInsets.fromLTRB(18, 14, 18, 0),
