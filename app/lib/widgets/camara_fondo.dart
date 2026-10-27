@@ -1,15 +1,28 @@
+import 'dart:async';
+
 import 'package:camera/camera.dart';
 import 'package:flutter/material.dart';
 
+import '../services/detector_puntos.dart';
 import 'esquinas.dart';
+import 'puntos_en_vivo.dart';
 
 /// Cámara frontal a pantalla completa, con degradados arriba y abajo para que
 /// se lea el texto encima, y el recuadro "Encuadra tus manos y torso".
 ///
 /// Si la cámara no abre (permiso negado, escritorio sin cámara) muestra el
 /// fondo oscuro del diseño con un aviso.
+///
+/// Si se da un [detector], la cámara le entrega sus imágenes y se dibujan los
+/// puntos de manos, pose y rostro encima (issue #23). Sin detector se
+/// comporta igual que antes.
 class CamaraFondo extends StatefulWidget {
-  const CamaraFondo({super.key});
+  const CamaraFondo({super.key, this.detector, this.mostrarFps = false});
+
+  final DetectorPuntos? detector;
+
+  /// Muestra los cuadros por segundo de la detección (para medir el #23).
+  final bool mostrarFps;
 
   @override
   State<CamaraFondo> createState() => _CamaraFondoState();
@@ -18,6 +31,7 @@ class CamaraFondo extends StatefulWidget {
 class _CamaraFondoState extends State<CamaraFondo> {
   CameraController? _controller;
   String? _error;
+  bool _transmitiendo = false;
 
   @override
   void initState() {
@@ -46,8 +60,16 @@ class _CamaraFondoState extends State<CamaraFondo> {
           frontal,
           ResolutionPreset.medium,
           enableAudio: false,
+          // Solo se pide YUV cuando hay detector; sin él la cámara queda como estaba.
+          imageFormatGroup:
+              widget.detector != null ? ImageFormatGroup.yuv420 : null,
         );
         await controller.initialize();
+        if (!mounted) {
+          await controller.dispose();
+          return;
+        }
+        await _iniciarDeteccion(controller, frontal.sensorOrientation);
         if (!mounted) {
           await controller.dispose();
           return;
@@ -72,6 +94,30 @@ class _CamaraFondoState extends State<CamaraFondo> {
     }
   }
 
+  /// Conecta la cámara con el detector. Si falla (por ejemplo faltan los
+  /// modelos en los assets) la cámara sigue funcionando, sin puntos.
+  Future<void> _iniciarDeteccion(CameraController controller, int rotacion) async {
+    final detector = widget.detector;
+    if (detector == null) return;
+    try {
+      await detector.iniciar();
+      var medido = false;
+      await controller.startImageStream((imagen) {
+        if (!medido) {
+          medido = true;
+          debugPrint(
+            'Puntos: imagen ${imagen.width}x${imagen.height}, '
+            'vista previa ${controller.value.previewSize}, rotación $rotacion',
+          );
+        }
+        detector.procesar(imagen, rotacion: rotacion);
+      });
+      _transmitiendo = true;
+    } catch (e) {
+      debugPrint('Puntos: no se pudo iniciar la detección: $e');
+    }
+  }
+
   void _reintentar() {
     setState(() => _error = null);
     _iniciarCamara();
@@ -79,6 +125,9 @@ class _CamaraFondoState extends State<CamaraFondo> {
 
   @override
   void dispose() {
+    if (_transmitiendo) {
+      _controller?.stopImageStream().catchError((Object _) {});
+    }
     _controller?.dispose();
     super.dispose();
   }
@@ -94,7 +143,15 @@ class _CamaraFondoState extends State<CamaraFondo> {
           child: SizedBox(
             width: controller.value.previewSize!.height,
             height: controller.value.previewSize!.width,
-            child: CameraPreview(controller),
+            child: widget.detector == null
+                ? CameraPreview(controller)
+                : Stack(
+                    fit: StackFit.expand,
+                    children: [
+                      CameraPreview(controller),
+                      PuntosEnVivo(cuadros: widget.detector!.cuadros),
+                    ],
+                  ),
           ),
         ),
       );
@@ -167,6 +224,16 @@ class _CamaraFondoState extends State<CamaraFondo> {
           ),
         ),
         const _GuiaEncuadre(),
+        if (widget.mostrarFps && widget.detector != null)
+          SafeArea(
+            child: Align(
+              alignment: Alignment.centerLeft,
+              child: Padding(
+                padding: const EdgeInsets.all(12),
+                child: _ContadorFps(cuadros: widget.detector!.cuadros),
+              ),
+            ),
+          ),
       ],
     );
   }
@@ -206,6 +273,63 @@ class _GuiaEncuadre extends StatelessWidget {
                   ),
                 ),
               ],
+            ),
+          ),
+        ),
+      );
+}
+
+/// Cuenta cuántos cuadros con puntos llegan por segundo. Va fuera de la
+/// vista previa escalada para que el texto no se recorte.
+class _ContadorFps extends StatefulWidget {
+  const _ContadorFps({required this.cuadros});
+
+  final Stream<dynamic> cuadros;
+
+  @override
+  State<_ContadorFps> createState() => _ContadorFpsState();
+}
+
+class _ContadorFpsState extends State<_ContadorFps> {
+  StreamSubscription<dynamic>? _suscripcion;
+  Timer? _reloj;
+  int _contados = 0;
+  int _fps = 0;
+
+  @override
+  void initState() {
+    super.initState();
+    _suscripcion = widget.cuadros.listen((_) => _contados++);
+    _reloj = Timer.periodic(const Duration(seconds: 1), (_) {
+      if (!mounted) return;
+      setState(() {
+        _fps = _contados;
+        _contados = 0;
+      });
+    });
+  }
+
+  @override
+  void dispose() {
+    _suscripcion?.cancel();
+    _reloj?.cancel();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) => DecoratedBox(
+        decoration: BoxDecoration(
+          color: const Color(0x99000000),
+          borderRadius: BorderRadius.circular(8),
+        ),
+        child: Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+          child: Text(
+            '$_fps FPS',
+            style: const TextStyle(
+              color: Color(0xFFFFFFFF),
+              fontSize: 14,
+              fontWeight: FontWeight.w700,
             ),
           ),
         ),
