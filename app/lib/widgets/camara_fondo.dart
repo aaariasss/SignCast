@@ -1,6 +1,8 @@
 import 'dart:async';
+import 'dart:math' as math;
 
 import 'package:camera/camera.dart';
+import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
 
 import '../services/detector_puntos.dart';
@@ -14,14 +16,16 @@ import 'puntos_en_vivo.dart';
 /// fondo oscuro del diseño con un aviso.
 ///
 /// Si se da un [detector], la cámara le entrega sus imágenes y se dibujan los
-/// puntos de manos, pose y rostro encima (issue #23). Sin detector se
-/// comporta igual que antes.
+/// puntos de manos, pose y rostro encima. Sin detector solo muestra la cámara.
+///
+/// En el navegador el detector (MediaPipe web) abre la cámara por su cuenta y
+/// muestra el video detrás de Flutter; aquí solo se dibujan los puntos.
 class CamaraFondo extends StatefulWidget {
   const CamaraFondo({super.key, this.detector, this.mostrarFps = false});
 
   final DetectorPuntos? detector;
 
-  /// Muestra los cuadros por segundo de la detección (para medir el #23).
+  /// Muestra los cuadros por segundo de la detección.
   final bool mostrarFps;
 
   @override
@@ -32,6 +36,22 @@ class _CamaraFondoState extends State<CamaraFondo> {
   CameraController? _controller;
   String? _error;
   bool _transmitiendo = false;
+  bool _videoWebListo = false;
+  bool _visible = true;
+  Size? _tamanoVisto;
+  StreamSubscription<dynamic>? _vigilaTamano;
+
+  /// En un `IndexedStack` la pestaña oculta tiene los ticker apagados; así se
+  /// sabe cuándo pausar la detección.
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    final visible = TickerMode.valuesOf(context).enabled;
+    if (visible != _visible) {
+      _visible = visible;
+      widget.detector?.pausar(!visible);
+    }
+  }
 
   @override
   void initState() {
@@ -40,7 +60,7 @@ class _CamaraFondoState extends State<CamaraFondo> {
     // diálogo del permiso) antes de abrir la cámara.
     WidgetsBinding.instance.addPostFrameCallback((_) async {
       await Future<void>.delayed(const Duration(milliseconds: 600));
-      if (mounted) _iniciarCamara();
+      if (mounted) _arrancar();
     });
   }
 
@@ -118,13 +138,50 @@ class _CamaraFondoState extends State<CamaraFondo> {
     }
   }
 
+  /// En web la cámara la abre el detector (JavaScript) y Flutter solo muestra
+  /// el video, porque el paquete `camera` no entrega imágenes en el navegador.
+  bool get _usaVideoWeb => kIsWeb && widget.detector != null;
+
+  Future<void> _iniciarWeb() async {
+    try {
+      await widget.detector!.iniciar();
+      if (!mounted) return;
+      setState(() {
+        _videoWebListo = true;
+        _tamanoVisto = widget.detector!.tamanoVideo;
+        _error = null;
+      });
+      // Si el navegador cambia la resolución o la orientación del video, se
+      // vuelve a calcular el encuadre para que no se deforme.
+      _vigilaTamano?.cancel();
+      _vigilaTamano = widget.detector!.cuadros.listen((_) {
+        final actual = widget.detector?.tamanoVideo;
+        if (mounted && actual != null && actual != _tamanoVisto) {
+          setState(() => _tamanoVisto = actual);
+        }
+      });
+    } catch (e) {
+      debugPrint('Cámara web: no se pudo iniciar: $e');
+      if (mounted) setState(() => _error = e.toString());
+    }
+  }
+
+  void _arrancar() {
+    if (_usaVideoWeb) {
+      _iniciarWeb();
+    } else {
+      _iniciarCamara();
+    }
+  }
+
   void _reintentar() {
     setState(() => _error = null);
-    _iniciarCamara();
+    _arrancar();
   }
 
   @override
   void dispose() {
+    _vigilaTamano?.cancel();
     if (_transmitiendo) {
       _controller?.stopImageStream().catchError((Object _) {});
     }
@@ -135,8 +192,36 @@ class _CamaraFondoState extends State<CamaraFondo> {
   @override
   Widget build(BuildContext context) {
     final controller = _controller;
+    final tamanoWeb = widget.detector?.tamanoVideo;
     final Widget fondo;
-    if (controller != null && controller.value.isInitialized) {
+    if (_videoWebListo &&
+        tamanoWeb != null &&
+        tamanoWeb.width > 0 &&
+        tamanoWeb.height > 0) {
+      // El video HTML va detrás de Flutter, recortado con `object-fit: cover`.
+      // Los puntos se colocan con el mismo cálculo de recorte.
+      fondo = LayoutBuilder(
+        builder: (context, caja) {
+          final escala = math.max(
+            caja.maxWidth / tamanoWeb.width,
+            caja.maxHeight / tamanoWeb.height,
+          );
+          final ancho = tamanoWeb.width * escala;
+          final alto = tamanoWeb.height * escala;
+          return ClipRect(
+            child: OverflowBox(
+              maxWidth: ancho,
+              maxHeight: alto,
+              child: SizedBox(
+                width: ancho,
+                height: alto,
+                child: PuntosEnVivo(cuadros: widget.detector!.cuadros),
+              ),
+            ),
+          );
+        },
+      );
+    } else if (controller != null && controller.value.isInitialized) {
       fondo = SizedBox.expand(
         child: FittedBox(
           fit: BoxFit.cover,

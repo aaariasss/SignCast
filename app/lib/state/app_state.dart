@@ -7,7 +7,7 @@ import '../models/ajustes.dart';
 import '../models/estado_deteccion.dart';
 import '../models/frase_historial.dart';
 import '../services/permiso_camara.dart';
-import '../services/permiso_camara_sistema.dart';
+import '../services/permiso_camara_plataforma.dart';
 import '../services/reconocedor.dart';
 import '../services/reconocedor_falso.dart';
 import '../services/voz.dart';
@@ -37,7 +37,7 @@ class AppState extends ChangeNotifier {
     final estado = AppState(
       reconocedor: reconocedor ?? ReconocedorFalso(),
       voz: voz ?? const VozNula(),
-      permisoCamara: permisoCamara ?? const PermisoCamaraSistema(),
+      permisoCamara: permisoCamara ?? crearPermisoCamara(),
       prefs: prefs,
     );
     estado._cargar();
@@ -62,8 +62,6 @@ class AppState extends ChangeNotifier {
   String get fraseActual => _fraseActual;
   List<FraseHistorial> get historial => List.unmodifiable(_historial);
   Paleta get paleta => _ajustes.oscuro ? Paleta.oscura : Paleta.clara;
-
-  // ---------------------------------------------------------------- ajustes
 
   void _cargar() {
     final p = _prefs;
@@ -113,8 +111,6 @@ class AppState extends ChangeNotifier {
 
   Future<void> cambiarOscuro(bool oscuro) =>
       _aplicar(_ajustes.copiar(oscuro: oscuro));
-
-  // ----------------------------------------------------------- reconocimiento
 
   /// Empieza a escuchar al reconocedor. Se llama al entrar a la app principal.
   void iniciarReconocimiento() {

@@ -1,4 +1,4 @@
-"""Cuenta los ejemplos por letra del dataset público ya convertido (issue #8).
+"""Cuenta los ejemplos por letra del dataset público ya convertido.
 
 Uso (desde ml/):
     python -m signcast.contar_publico            # imprime la tabla en Markdown

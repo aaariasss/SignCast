@@ -13,7 +13,7 @@ VOCABULARIO = DIR_ML / "vocabulario.csv"
 LONGITUD_SECUENCIA = 30          # cuadros por muestra (~1 s a 30 fps)
 FPS_OBJETIVO = 30
 
-# Puntos clave usados 
+# Puntos clave usados
 PUNTOS_MANO = 21
 
 # Pose: nariz, hombros, codos, muñecas, caderas
@@ -36,7 +36,7 @@ N_PUNTOS = 2 * PUNTOS_MANO + len(INDICES_POSE) + len(INDICES_CARA)   # 90
 N_CARACTERISTICAS = N_PUNTOS * 3                                       # 270
 N_CARACTERISTICAS_MANO = PUNTOS_MANO * 3                               # 63
 
-# Modelos de MediaPipe Tasks 
+# Modelos de MediaPipe Tasks
 URLS_MEDIAPIPE = {
     "hand_landmarker.task": "https://storage.googleapis.com/mediapipe-models/hand_landmarker/hand_landmarker/float16/latest/hand_landmarker.task",
     "pose_landmarker_lite.task": "https://storage.googleapis.com/mediapipe-models/pose_landmarker/pose_landmarker_lite/float16/latest/pose_landmarker_lite.task",

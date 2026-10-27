@@ -1,4 +1,4 @@
-/// Preferencias del usuario (issue #24). Se guardan en el teléfono.
+/// Preferencias del usuario. Se guardan en el teléfono.
 class Ajustes {
   const Ajustes({
     this.tamano = 26,

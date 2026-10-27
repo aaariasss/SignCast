@@ -1,5 +1,7 @@
+import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
 
+import '../services/detector_plataforma.dart';
 import '../services/detector_puntos.dart';
 import '../state/app_state.dart';
 import '../widgets/camara_fondo.dart';
@@ -7,8 +9,9 @@ import '../widgets/hoja_subtitulos.dart';
 import '../widgets/logo.dart';
 import '../widgets/pildora_estado.dart';
 
-/// Muestra los puntos de MediaPipe sobre la cámara (issue #23). Está apagado
-/// por defecto; para probarlo: `flutter run --dart-define=PUNTOS=true`.
+/// Muestra los FPS de la detección. En el navegador la detección siempre está
+/// encendida; en Android hay que pedirla con la misma bandera.
+/// Para medir: `flutter run -d chrome --dart-define=PUNTOS=true`.
 const bool _puntosActivos = bool.fromEnvironment('PUNTOS');
 
 /// Pantalla principal: cámara, estado de detección y subtítulos.
@@ -21,7 +24,7 @@ class TraductorScreen extends StatefulWidget {
 
 class _TraductorScreenState extends State<TraductorScreen> {
   late final DetectorPuntos? _detector =
-      _puntosActivos ? DetectorPuntosNativo() : null;
+      (kIsWeb || _puntosActivos) ? crearDetectorPlataforma() : null;
 
   @override
   void dispose() {
@@ -36,7 +39,10 @@ class _TraductorScreenState extends State<TraductorScreen> {
     return Stack(
       fit: StackFit.expand,
       children: [
-        CamaraFondo(detector: _detector, mostrarFps: _detector != null),
+        CamaraFondo(
+          detector: _detector,
+          mostrarFps: _puntosActivos && _detector != null,
+        ),
         SafeArea(
           child: Padding(
             padding: const EdgeInsets.fromLTRB(18, 14, 18, 0),

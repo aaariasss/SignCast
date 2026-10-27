@@ -1,4 +1,4 @@
-"""Genera los datos de referencia para la prueba en Dart del issue #23.
+"""Genera los datos de referencia para la prueba en Dart.
 
 La app (Dart) debe producir el mismo vector que Python. Este script crea
 puntos crudos *sintéticos* (sin datos de personas) con casos borde, calcula con
