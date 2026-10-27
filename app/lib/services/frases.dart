@@ -1,9 +1,7 @@
 /// Constructor de frases de SignCast.
 ///
 /// Traducción directa de `ml/signcast/frases.py`: convierte la lista de glosas
-/// que predice el modelo 
-///
-
+/// que predice el modelo en una oración en español.
 library;
 
 /// Glosa que marca "manos quietas o abajo"; separa palabras y frases.

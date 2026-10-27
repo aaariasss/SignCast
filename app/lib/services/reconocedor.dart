@@ -20,9 +20,8 @@ class EventoReconocimiento {
 
 /// Contrato entre las pantallas y quien reconoce las señas.
 ///
-/// Hoy lo implementa `ReconocedorFalso`. En el issue #25 se agrega una
-/// implementación con MediaPipe + TFLite que cumple esta misma interfaz, y las
-/// pantallas no cambian.
+/// Hoy lo implementa `ReconocedorFalso`; la implementación con el modelo real
+/// cumple esta misma interfaz y las pantallas no cambian.
 abstract class Reconocedor {
   Stream<EventoReconocimiento> get eventos;
 

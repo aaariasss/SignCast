@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
 
 import '../state/app_state.dart';
@@ -38,6 +39,9 @@ class _PrincipalScreenState extends State<PrincipalScreen> {
   Widget build(BuildContext context) {
     final inferior = MediaQuery.of(context).viewPadding.bottom;
     return Scaffold(
+      // En web el video de la cámara va detrás de Flutter: el fondo del
+      // traductor debe ser transparente para que se vea.
+      backgroundColor: kIsWeb && _indice == 0 ? Colors.transparent : null,
       body: Stack(
         children: [
           IndexedStack(

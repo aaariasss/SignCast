@@ -12,7 +12,15 @@ abstract class DetectorPuntos {
   /// Un evento por cada imagen procesada.
   Stream<CuadroPuntos> get cuadros;
 
+  /// Solo en web: tamaño del video en píxeles, para colocar los puntos encima.
+  /// En las demás plataformas es nulo y la cámara la maneja el paquete `camera`.
+  Size? get tamanoVideo;
+
   Future<void> iniciar();
+
+  /// Pausa o reanuda la detección sin apagar la cámara (por ejemplo, cuando la
+  /// pestaña del traductor queda oculta).
+  void pausar(bool pausado);
 
   /// Entrega una imagen de la cámara. [rotacion] son los grados que hay que
   /// girarla para que quede derecha (`sensorOrientation` de la cámara).
@@ -55,6 +63,12 @@ class DetectorPuntosNativo implements DetectorPuntos {
 
   @override
   Stream<CuadroPuntos> get cuadros => _controlador.stream;
+
+  @override
+  Size? get tamanoVideo => null;
+
+  @override
+  void pausar(bool pausado) {}
 
   @override
   Future<void> iniciar() async {

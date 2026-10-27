@@ -1,5 +1,6 @@
 import 'dart:ui';
 
+import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
 
 import '../state/app_state.dart';
@@ -27,20 +28,26 @@ class Vidrio extends StatelessWidget {
   Widget build(BuildContext context) {
     final p = context.paleta;
     final forma = BorderRadius.circular(radio);
+    final tarjeta = Container(
+      padding: padding,
+      decoration: BoxDecoration(
+        color: color ?? p.vidrio,
+        borderRadius: forma,
+        border: Border.all(color: borde ?? p.linea),
+      ),
+      child: child,
+    );
+    // En web el desenfoque no alcanza al video de la cámara (es un elemento
+    // HTML aparte) y cuesta cuadros por segundo, así que solo se usa fuera de
+    // la web.
     return ClipRRect(
       borderRadius: forma,
-      child: BackdropFilter(
-        filter: ImageFilter.blur(sigmaX: desenfoque, sigmaY: desenfoque),
-        child: Container(
-          padding: padding,
-          decoration: BoxDecoration(
-            color: color ?? p.vidrio,
-            borderRadius: forma,
-            border: Border.all(color: borde ?? p.linea),
-          ),
-          child: child,
-        ),
-      ),
+      child: kIsWeb || desenfoque <= 0
+          ? tarjeta
+          : BackdropFilter(
+              filter: ImageFilter.blur(sigmaX: desenfoque, sigmaY: desenfoque),
+              child: tarjeta,
+            ),
     );
   }
 }

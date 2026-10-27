@@ -1,7 +1,7 @@
 /// Contrato para leer frases en voz alta.
 ///
-/// El issue #26 (Valeria) agrega la implementación con `flutter_tts` en
-/// español de México. Mientras tanto la app usa [VozNula], que no hace nada.
+/// La implementación real usará `flutter_tts` en español de México. Mientras
+/// tanto la app usa [VozNula], que no hace nada.
 abstract class Voz {
   /// Lee [texto]. [velocidad] es 1.0 para velocidad normal.
   Future<void> hablar(String texto, {required double velocidad});

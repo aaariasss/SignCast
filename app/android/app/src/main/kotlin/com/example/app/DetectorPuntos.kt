@@ -55,7 +55,6 @@ class DetectorPuntos(
     private var cara: FaceLandmarker? = null
     private var ultimoTs = -1L
 
-    // Milisegundos de la última imagen (para medir el rendimiento, issue #23).
     // Los tres modelos corren a la vez, cada uno en su propio hilo. Cada modelo
     // se crea y se usa siempre en el mismo hilo (lo exige el delegado de GPU).
     private val ejManos = Executors.newSingleThreadExecutor()

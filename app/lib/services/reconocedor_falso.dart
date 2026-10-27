@@ -7,7 +7,7 @@ import 'reconocedor.dart';
 
 enum _Etapa { reposo, signando, mostrando }
 
-/// Reconocedor de mentira para probar la interfaz sin modelo (issue #24).
+/// Reconocedor de mentira para probar la interfaz sin modelo.
 ///
 /// Repite en bucle: unos segundos sin manos, luego va "reconociendo" las
 /// glosas de una frase al azar (de `docs/frases.md`) y por último entrega la
