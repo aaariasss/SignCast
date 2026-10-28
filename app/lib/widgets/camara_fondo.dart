@@ -7,19 +7,18 @@ import 'package:flutter/material.dart';
 
 import '../services/detector_puntos.dart';
 import 'esquinas.dart';
+import 'logo.dart';
 import 'puntos_en_vivo.dart';
 
 /// Cámara frontal a pantalla completa, con degradados arriba y abajo para que
-/// se lea el texto encima, y el recuadro "Encuadra tus manos y torso".
+/// se lea el texto encima, y las esquinas que marcan dónde encuadrar manos y torso.
 ///
-/// Si la cámara no abre (permiso negado, escritorio sin cámara) muestra el
-/// fondo oscuro del diseño con un aviso.
+/// Si la cámara no abre (permiso negado, equipo sin cámara) muestra el fondo
+/// oscuro del diseño con un aviso.
 ///
-/// Si se da un [detector], la cámara le entrega sus imágenes y se dibujan los
+/// Si se da un [detector], el detector (MediaPipe web) abre la cámara por su
+/// cuenta y muestra el video detrás de Flutter; aquí solo se dibujan los
 /// puntos de manos, pose y rostro encima. Sin detector solo muestra la cámara.
-///
-/// En el navegador el detector (MediaPipe web) abre la cámara por su cuenta y
-/// muestra el video detrás de Flutter; aquí solo se dibujan los puntos.
 class CamaraFondo extends StatefulWidget {
   const CamaraFondo({super.key, this.detector, this.mostrarFps = false});
 
@@ -35,7 +34,6 @@ class CamaraFondo extends StatefulWidget {
 class _CamaraFondoState extends State<CamaraFondo> {
   CameraController? _controller;
   String? _error;
-  bool _transmitiendo = false;
   bool _videoWebListo = false;
   bool _visible = true;
   Size? _tamanoVisto;
@@ -64,9 +62,9 @@ class _CamaraFondoState extends State<CamaraFondo> {
     });
   }
 
-  /// Abre la cámara frontal. Al aceptar el permiso por primera vez, Android a
-  /// veces rechaza la primera apertura (la superficie de la vista previa aún no
-  /// está lista), así que se reintenta unas veces antes de mostrar el error.
+  /// Abre la cámara frontal con el paquete `camera` (solo cuando no hay
+  /// detector). Si la primera apertura falla, por ejemplo justo después de
+  /// aceptar el permiso, se reintenta unas veces antes de mostrar el error.
   Future<void> _iniciarCamara({int intentos = 3}) async {
     for (var i = 1; i <= intentos; i++) {
       CameraController? controller;
@@ -80,16 +78,8 @@ class _CamaraFondoState extends State<CamaraFondo> {
           frontal,
           ResolutionPreset.medium,
           enableAudio: false,
-          // Solo se pide YUV cuando hay detector; sin él la cámara queda como estaba.
-          imageFormatGroup:
-              widget.detector != null ? ImageFormatGroup.yuv420 : null,
         );
         await controller.initialize();
-        if (!mounted) {
-          await controller.dispose();
-          return;
-        }
-        await _iniciarDeteccion(controller, frontal.sensorOrientation);
         if (!mounted) {
           await controller.dispose();
           return;
@@ -114,32 +104,8 @@ class _CamaraFondoState extends State<CamaraFondo> {
     }
   }
 
-  /// Conecta la cámara con el detector. Si falla (por ejemplo faltan los
-  /// modelos en los assets) la cámara sigue funcionando, sin puntos.
-  Future<void> _iniciarDeteccion(CameraController controller, int rotacion) async {
-    final detector = widget.detector;
-    if (detector == null) return;
-    try {
-      await detector.iniciar();
-      var medido = false;
-      await controller.startImageStream((imagen) {
-        if (!medido) {
-          medido = true;
-          debugPrint(
-            'Puntos: imagen ${imagen.width}x${imagen.height}, '
-            'vista previa ${controller.value.previewSize}, rotación $rotacion',
-          );
-        }
-        detector.procesar(imagen, rotacion: rotacion);
-      });
-      _transmitiendo = true;
-    } catch (e) {
-      debugPrint('Puntos: no se pudo iniciar la detección: $e');
-    }
-  }
-
   /// En web la cámara la abre el detector (JavaScript) y Flutter solo muestra
-  /// el video, porque el paquete `camera` no entrega imágenes en el navegador.
+  /// el video.
   bool get _usaVideoWeb => kIsWeb && widget.detector != null;
 
   Future<void> _iniciarWeb() async {
@@ -182,9 +148,6 @@ class _CamaraFondoState extends State<CamaraFondo> {
   @override
   void dispose() {
     _vigilaTamano?.cancel();
-    if (_transmitiendo) {
-      _controller?.stopImageStream().catchError((Object _) {});
-    }
     _controller?.dispose();
     super.dispose();
   }
@@ -228,15 +191,7 @@ class _CamaraFondoState extends State<CamaraFondo> {
           child: SizedBox(
             width: controller.value.previewSize!.height,
             height: controller.value.previewSize!.width,
-            child: widget.detector == null
-                ? CameraPreview(controller)
-                : Stack(
-                    fit: StackFit.expand,
-                    children: [
-                      CameraPreview(controller),
-                      PuntosEnVivo(cuadros: widget.detector!.cuadros),
-                    ],
-                  ),
+            child: CameraPreview(controller),
           ),
         ),
       );
@@ -260,6 +215,8 @@ class _CamaraFondoState extends State<CamaraFondo> {
                   ? const Column(
                       mainAxisSize: MainAxisSize.min,
                       children: [
+                        Logo(tamano: 72),
+                        SizedBox(height: 22),
                         SizedBox(
                           width: 26,
                           height: 26,
@@ -344,17 +301,6 @@ class _GuiaEncuadre extends StatelessWidget {
                     color: Color(0x99FFFFFF),
                     largo: 42,
                     radio: 8,
-                  ),
-                ),
-                Align(
-                  alignment: Alignment.bottomCenter,
-                  child: Text(
-                    'Encuadra tus manos y torso',
-                    style: TextStyle(
-                      fontSize: 12,
-                      fontWeight: FontWeight.w500,
-                      color: Color(0xA6FFFFFF),
-                    ),
                   ),
                 ),
               ],

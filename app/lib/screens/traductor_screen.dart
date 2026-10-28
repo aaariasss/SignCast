@@ -9,10 +9,9 @@ import '../widgets/hoja_subtitulos.dart';
 import '../widgets/logo.dart';
 import '../widgets/pildora_estado.dart';
 
-/// Muestra los FPS de la detección. En el navegador la detección siempre está
-/// encendida; en Android hay que pedirla con la misma bandera.
+/// Muestra los FPS de la detección.
 /// Para medir: `flutter run -d chrome --dart-define=PUNTOS=true`.
-const bool _puntosActivos = bool.fromEnvironment('PUNTOS');
+const bool _mostrarFps = bool.fromEnvironment('PUNTOS');
 
 /// Pantalla principal: cámara, estado de detección y subtítulos.
 class TraductorScreen extends StatefulWidget {
@@ -23,8 +22,8 @@ class TraductorScreen extends StatefulWidget {
 }
 
 class _TraductorScreenState extends State<TraductorScreen> {
-  late final DetectorPuntos? _detector =
-      (kIsWeb || _puntosActivos) ? crearDetectorPlataforma() : null;
+  // La detección de puntos solo existe en el navegador.
+  late final DetectorPuntos? _detector = kIsWeb ? crearDetectorPlataforma() : null;
 
   @override
   void dispose() {
@@ -41,7 +40,7 @@ class _TraductorScreenState extends State<TraductorScreen> {
       children: [
         CamaraFondo(
           detector: _detector,
-          mostrarFps: _puntosActivos && _detector != null,
+          mostrarFps: _mostrarFps && _detector != null,
         ),
         SafeArea(
           child: Padding(

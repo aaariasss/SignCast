@@ -6,6 +6,7 @@ import '../theme/paleta.dart';
 import '../widgets/boton_primario.dart';
 import '../widgets/esquinas.dart';
 import '../widgets/logo.dart';
+import '../widgets/ruta_suave.dart';
 import '../widgets/vidrio.dart';
 import 'principal_screen.dart';
 
@@ -77,9 +78,7 @@ class _PermisoScreenState extends State<PermisoScreen>
   void _entrar() {
     if (_entro) return;
     _entro = true;
-    Navigator.of(context).pushReplacement(
-      MaterialPageRoute<void>(builder: (_) => const PrincipalScreen()),
-    );
+    Navigator.of(context).pushReplacement(rutaSuave<void>(const PrincipalScreen()));
   }
 
   @override

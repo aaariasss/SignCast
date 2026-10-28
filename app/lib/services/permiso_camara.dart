@@ -9,7 +9,7 @@ enum EstadoPermiso {
 }
 
 /// Acceso al permiso de la cámara. La implementación real está en
-/// `permiso_camara_sistema.dart`; así las pruebas no dependen del teléfono.
+/// `permiso_camara_web.dart` (el del navegador); así las pruebas no dependen de él.
 abstract class PermisoCamara {
   /// Consulta el estado actual sin mostrar ningún diálogo.
   Future<EstadoPermiso> estado();

@@ -85,6 +85,59 @@ async function cargarModelos() {
   }
 }
 
+// Safari no deja consultar el permiso de la cámara sin pedirlo, así que además
+// se recuerda en este navegador que ya se concedió una vez.
+const CLAVE_CAMARA = "signcast.camara";
+
+function recordarCamara(concedida) {
+  try {
+    if (concedida) localStorage.setItem(CLAVE_CAMARA, "1");
+    else localStorage.removeItem(CLAVE_CAMARA);
+  } catch (_) {
+    // Sin almacenamiento (modo privado): simplemente no se recuerda.
+  }
+}
+
+function camaraRecordada() {
+  try {
+    return localStorage.getItem(CLAVE_CAMARA) === "1";
+  } catch (_) {
+    return false;
+  }
+}
+
+/**
+ * Estado del permiso sin mostrar ningún aviso: "granted", "denied" o "prompt".
+ * Usa la API de permisos si el navegador la tiene y, si no, lo que se recordó.
+ */
+async function estadoPermiso() {
+  try {
+    if (navigator.permissions && navigator.permissions.query) {
+      const r = await navigator.permissions.query({ name: "camera" });
+      if (r.state === "granted") return "granted";
+      if (r.state === "denied") {
+        recordarCamara(false);
+        return "denied";
+      }
+    }
+  } catch (_) {
+    // Safari viejo: no conoce el permiso "camera".
+  }
+  return camaraRecordada() ? "granted" : "prompt";
+}
+
+// iOS dibuja un botón de play/pausa encima de un video pausado (pasa unos
+// instantes al abrir o reabrir la cámara). Se oculta con CSS.
+const estiloVideo = document.createElement("style");
+estiloVideo.textContent =
+  "video::-webkit-media-controls," +
+  "video::-webkit-media-controls-panel," +
+  "video::-webkit-media-controls-play-button," +
+  "video::-webkit-media-controls-start-playback-button," +
+  "video::-webkit-media-controls-overlay-play-button" +
+  "{display:none!important;opacity:0!important;pointer-events:none!important;-webkit-appearance:none}";
+document.head.appendChild(estiloVideo);
+
 /**
  * Pide el permiso de la cámara y lo suelta enseguida. Hay que llamarlo desde
  * un toque del usuario (Safari lo exige) y devuelve si se concedió.
@@ -96,8 +149,10 @@ async function pedirPermiso() {
       audio: false,
     });
     prueba.getTracks().forEach((t) => t.stop());
+    recordarCamara(true);
     return true;
   } catch (e) {
+    if (e && e.name === "NotAllowedError") recordarCamara(false);
     console.warn("SignCast: permiso de cámara no concedido", e);
     return false;
   }
@@ -109,17 +164,27 @@ async function pedirPermiso() {
  */
 async function abrirCamara() {
   detener();
-  flujo = await navigator.mediaDevices.getUserMedia({
-    video: {
-      facingMode: "user",
-      width: { ideal: 480 },
-      height: { ideal: 360 },
-      frameRate: { ideal: 30 },
-    },
-    audio: false,
-  });
+  try {
+    flujo = await navigator.mediaDevices.getUserMedia({
+      video: {
+        facingMode: "user",
+        width: { ideal: 480 },
+        height: { ideal: 360 },
+        frameRate: { ideal: 30 },
+      },
+      audio: false,
+    });
+  } catch (e) {
+    // Si el permiso ya no está, la próxima vez se vuelve a pasar por la pantalla del permiso.
+    if (e && e.name === "NotAllowedError") recordarCamara(false);
+    throw e;
+  }
+  recordarCamara(true);
   video = document.createElement("video");
   video.setAttribute("playsinline", "");
+  video.controls = false;
+  video.disablePictureInPicture = true;
+  video.setAttribute("disableRemotePlayback", "");
   video.muted = true;
   video.autoplay = true;
   video.srcObject = flujo;
@@ -138,11 +203,15 @@ async function abrirCamara() {
     objectFit: "cover",
     transform: "scaleX(-1)",
     background: "#000",
+    // Oculto hasta que el tamaño del video se estabilice (ver más abajo).
+    opacity: "0",
+    transition: "opacity .25s ease-out",
   });
   video.addEventListener("pause", () => {
     if (flujo) video.play().catch(() => {});
   });
   document.body.appendChild(video);
+  ajustarVideo();
   await new Promise((resolve) => {
     if (video.readyState >= 1) resolve();
     else video.addEventListener("loadedmetadata", () => resolve(), { once: true });
@@ -152,6 +221,47 @@ async function abrirCamara() {
   } catch (_) {
     // Safari puede negarse; el evento `pause` de arriba lo reanuda.
   }
+  // Al abrir, Safari a veces entrega el video con otro tamaño u orientación y
+  // lo corrige unos segundos después, y con `object-fit: cover` eso se ve como
+  // un acercamiento enorme. Se espera a que el tamaño deje de cambiar y
+  // entonces se muestra con una transición suave.
+  await esperarTamanoEstable(video, 500, 4000);
+  video.style.opacity = "1";
+}
+
+/**
+ * Hace que el video llene toda la ventana visible. `dvh` sigue a la barra de
+ * Safari y al cambio de tamaño; el valor se reasigna a propósito para obligar a
+ * recalcular el diseño (al desbloquear el iPhone a veces quedaba con franjas
+ * negras arriba y abajo).
+ */
+function ajustarVideo() {
+  if (!video) return;
+  const dvh = window.CSS && CSS.supports && CSS.supports("height", "100dvh");
+  video.style.height = "0";
+  void video.offsetHeight;
+  video.style.width = "100vw";
+  video.style.height = dvh ? "100dvh" : "100%";
+}
+
+/** Espera a que `video` lleve `quietoMs` sin cambiar de tamaño (máximo `maxMs`). */
+function esperarTamanoEstable(v, quietoMs, maxMs) {
+  return new Promise((resolve) => {
+    let reloj = null;
+    const listo = () => {
+      clearTimeout(reloj);
+      clearTimeout(tope);
+      v.removeEventListener("resize", reiniciar);
+      resolve();
+    };
+    const reiniciar = () => {
+      clearTimeout(reloj);
+      reloj = setTimeout(listo, quietoMs);
+    };
+    const tope = setTimeout(listo, maxMs);
+    v.addEventListener("resize", reiniciar);
+    reiniciar();
+  });
 }
 
 function copiar(puntos, salida, inicio, maximo) {
@@ -166,7 +276,7 @@ function copiar(puntos, salida, inicio, maximo) {
 /**
  * Arma el cuadro: mano izquierda, mano derecha, pose y rostro (NaN si falta).
  * La etiqueta Left/Right se usa tal cual la da MediaPipe, con la misma regla
- * que Python y DetectorPuntos.kt.
+ * que Python (`Extractor` en ml/signcast).
  */
 function procesar() {
   const ts = performance.now();
@@ -260,8 +370,87 @@ function detener() {
   }
 }
 
+/** Vuelve a abrir la cámara conservando la detección en marcha. */
+async function reabrirCamara() {
+  const callback = alCuadro;
+  try {
+    await abrirCamara();
+  } catch (e) {
+    console.warn("SignCast: no se pudo reabrir la cámara", e);
+    return;
+  }
+  if (callback) suscribir(callback);
+}
+
+/**
+ * Quita cualquier zoom de la página: Safari a veces la deja acercada al volver
+ * a la app. Cambiar y restaurar el viewport lo obliga a recalcular la escala.
+ */
+function reiniciarVista() {
+  const meta = document.querySelector('meta[name="viewport"]');
+  if (meta) {
+    const original = meta.getAttribute("content");
+    meta.setAttribute("content", "width=device-width, initial-scale=1.0");
+    requestAnimationFrame(() => meta.setAttribute("content", original));
+  }
+  window.scrollTo(0, 0);
+  ajustarVideo();
+}
+
+// Al salir de la app o bloquear el iPhone, Safari detiene la cámara; al volver
+// puede entregar el video con otro tamaño u orientación y se ve con zoom. Si
+// estuvo oculta más de un instante, se reinicia la vista y se abre la cámara de
+// nuevo para empezar con un flujo limpio (la detección sigue, y el video entra
+// con el mismo desvanecimiento del inicio). Efecto: iOS puede volver a pedir el
+// permiso de la cámara cada vez que se regresa a la app.
+//
+// Safari no siempre manda `visibilitychange` al regresar (según cómo se salga de
+// la app), por eso también se escuchan `pageshow` y `focus`.
+let ocultaDesde = 0;
+let seOculto = false;
+let ultimaVuelta = 0;
+
+function alVolver(origen) {
+  if (!video || !flujo) return;
+  const ahora = performance.now();
+  // Los tres eventos suelen llegar juntos: se atiende uno solo.
+  if (ahora - ultimaVuelta < 1500) return;
+  ultimaVuelta = ahora;
+  const pista = flujo.getVideoTracks()[0];
+  // `focus` también llega sin haber salido de la app (por ejemplo al cerrar el
+  // aviso del permiso); solo cuenta si antes hubo un `hidden` o `pagehide`.
+  const estuvoOculta = seOculto && ahora - ocultaDesde > 800;
+  seOculto = false;
+  console.log("SignCast: de vuelta en la app (" + origen + "), oculta " +
+    Math.round(ahora - ocultaDesde) + " ms, cámara " + (pista ? pista.readyState : "sin pista"));
+  reiniciarVista();
+  if (!pista || pista.readyState === "ended" || estuvoOculta) {
+    reabrirCamara();
+  } else if (video.paused) {
+    video.play().catch(() => {});
+  }
+}
+
+document.addEventListener("visibilitychange", () => {
+  if (document.visibilityState === "hidden") {
+    ocultaDesde = performance.now();
+    seOculto = true;
+  } else {
+    alVolver("visibilitychange");
+  }
+});
+window.addEventListener("pagehide", () => {
+  ocultaDesde = performance.now();
+  seOculto = true;
+});
+window.addEventListener("pageshow", () => alVolver("pageshow"));
+window.addEventListener("focus", () => alVolver("focus"));
+window.addEventListener("resize", ajustarVideo);
+window.addEventListener("orientationchange", ajustarVideo);
+
 window.signcastPuntos = {
   cargarModelos,
+  estadoPermiso,
   pedirPermiso,
   abrirCamara,
   suscribir,

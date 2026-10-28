@@ -1,4 +1,6 @@
 import 'detector_puntos.dart';
 
-/// Android y demás plataformas con código nativo (`DetectorPuntos.kt`).
-DetectorPuntos crearDetectorPlataforma() => DetectorPuntosNativo();
+/// Fuera del navegador (por ejemplo en `flutter test`) no hay detector: la
+/// detección de puntos solo existe en web.
+DetectorPuntos crearDetectorPlataforma() =>
+    throw UnsupportedError('La detección de puntos solo funciona en el navegador.');

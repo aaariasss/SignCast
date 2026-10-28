@@ -1,12 +1,15 @@
 {
-    "name": "app",
-    "short_name": "app",
-    "start_url": ".",
+    "id": "./",
+    "name": "SignCast",
+    "short_name": "SignCast",
+    "description": "Traduce Lengua de Señas Mexicana a texto y voz, sin internet.",
+    "lang": "es-MX",
+    "start_url": "./",
+    "scope": "./",
     "display": "standalone",
-    "background_color": "#0175C2",
-    "theme_color": "#0175C2",
-    "description": "A new Flutter project.",
     "orientation": "portrait-primary",
+    "background_color": "#070B16",
+    "theme_color": "#070B16",
     "prefer_related_applications": false,
     "icons": [
         {

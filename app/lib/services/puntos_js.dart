@@ -10,6 +10,9 @@ extension type PuntosJS._(JSObject _) implements JSObject {
   /// Carga los modelos de manos, pose y rostro.
   external JSPromise<JSAny?> cargarModelos();
 
+  /// Estado del permiso sin mostrar avisos: `granted`, `denied` o `prompt`.
+  external JSPromise<JSString> estadoPermiso();
+
   /// Pide el permiso de la cámara y lo suelta; hay que llamarlo desde un toque.
   external JSPromise<JSBoolean> pedirPermiso();
 

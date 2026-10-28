@@ -1,5 +1,5 @@
 import 'permiso_camara.dart';
-import 'permiso_camara_sistema.dart';
 
-/// Android y demás plataformas: el permiso del sistema (`permission_handler`).
-PermisoCamara crearPermisoCamara() => const PermisoCamaraSistema();
+/// Fuera del navegador (por ejemplo en `flutter test`) no hay permiso real:
+/// se usa la versión nula, que concede al pedirlo.
+PermisoCamara crearPermisoCamara() => const PermisoCamaraNulo();

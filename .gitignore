@@ -3,12 +3,10 @@ data/*
 !data/README.md
 modelos/
 ml/mediapipe_modelos/
-app/android/app/src/main/assets/*.task
 app/web/mediapipe/vision_bundle.js
 app/web/mediapipe/wasm/
 app/web/mediapipe/modelos/
 app/.firebase/
-web-prueba/
 docs/puntos_clave_app.md
 *.npz
 *.npy
@@ -37,11 +35,6 @@ app/.flutter-plugins-dependencies
 app/build/
 app/.packages
 app/**/GeneratedPluginRegistrant.*
-app/android/.gradle/
-app/android/local.properties
-app/android/app/google-services.json
-app/ios/Pods/
-app/ios/Runner/GoogleService-Info.plist
 *.iml
 
 # Credenciales de Google Cloud

@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html>
+<html lang="es">
 <head>
   <!--
     If you are serving your web app in a path other than the root, change the
@@ -18,18 +18,25 @@
 
   <meta charset="UTF-8">
   <meta content="IE=Edge" http-equiv="X-UA-Compatible">
-  <meta name="description" content="A new Flutter project.">
+  <!-- viewport-fit=cover: la página llena toda la pantalla del iPhone (sin franjas
+       negras). maximum-scale y user-scalable evitan que Safari acerque la página. -->
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+  <meta name="description" content="Traduce Lengua de Señas Mexicana a texto y voz, sin internet.">
+  <meta name="theme-color" content="#070B16">
 
-  <!-- iOS meta tags & icons -->
+  <!-- iOS meta tags & icons (Agregar a pantalla de inicio) -->
   <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black">
-  <meta name="apple-mobile-web-app-title" content="app">
-  <link rel="apple-touch-icon" href="icons/Icon-192.png">
+  <meta name="apple-mobile-web-app-title" content="SignCast">
+  <!-- 180x180 es el tamaño que usa el iPhone. Nombre nuevo a propósito: iOS guarda
+       el ícono por URL y seguía mostrando uno anterior. -->
+  <link rel="apple-touch-icon" sizes="180x180" href="icons/apple-touch-icon-180.png">
 
   <!-- Favicon -->
   <link rel="icon" type="image/png" href="favicon.png"/>
 
-  <title>app</title>
+  <title>SignCast</title>
   <link rel="manifest" href="manifest.json">
 </head>
 <body>
@@ -41,8 +48,23 @@
     For more details:
     * https://docs.flutter.dev/platform-integration/web/initialization
   -->
-  <!-- MediaPipe web (issue #46): manos, pose y rostro en el navegador. -->
+  <!-- MediaPipe web: manos, pose y rostro en el navegador. -->
   <script type="module" src="mediapipe/puntos.js"></script>
+  <!-- Sin internet: sw.js guarda la app, MediaPipe y el modelo.
+       Solo funciona con HTTPS (Firebase Hosting) o en localhost. -->
+  <script>
+    if ('serviceWorker' in navigator) {
+      window.addEventListener('load', function () {
+        navigator.serviceWorker
+          .register(new URL('sw.js', document.baseURI).href)
+          .catch(function (e) { console.warn('No se pudo registrar sw.js', e); });
+        // Pide a Safari que no borre lo guardado cuando el sitio no se usa.
+        if (navigator.storage && navigator.storage.persist) {
+          navigator.storage.persist().catch(function () {});
+        }
+      });
+    }
+  </script>
   <script src="flutter_bootstrap.js" async></script>
 </body>
 </html>

@@ -7,7 +7,7 @@ import '../widgets/control_deslizante.dart';
 import '../widgets/encabezado_pagina.dart';
 import '../widgets/vidrio.dart';
 
-/// Ajustes: tamaño del texto, voz y apariencia (todo se guarda en el teléfono).
+/// Ajustes: tamaño del texto, voz y apariencia (todo se guarda en el dispositivo).
 class AjustesScreen extends StatelessWidget {
   const AjustesScreen({super.key});
 
