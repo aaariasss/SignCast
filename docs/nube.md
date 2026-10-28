@@ -1,4 +1,4 @@
-# Infraestructura en la nube (issue #27)
+# Infraestructura en la nube
 
 Los datos se comparten en una carpeta de **Google Drive** y el modelo se distribuye con **Firebase** (plan Spark, sin costo). Los datos y modelos **no van al repo**.
 
@@ -10,7 +10,6 @@ Se eligió Drive en lugar de Cloud Storage porque Google Cloud pide tarjeta y su
 |---|---|
 | Datos | [Carpeta de Drive](https://drive.google.com/drive/folders/1Qy4yopwbec2VXHipS9UW5C6UOsja2yuw?usp=drive_link) (acceso restringido al equipo) |
 | Proyecto de Firebase | SignCast (`signcast-01`), plan Spark |
-| App Android registrada | `com.example.app` |
 | Entrenamiento | Colab |
 
 ## Carpeta de Drive
@@ -19,7 +18,7 @@ Se eligió Drive en lugar de Cloud Storage porque Google Cloud pide tarjeta y su
 SignCast-datos/
 ├── raw/
 │   ├── equipo/        grabaciones del equipo (grabar.py)
-│   └── publico.zip    dataset público de CICESE convertido (issue #8)
+│   └── publico.zip    dataset público de CICESE convertido
 ├── procesado/         alfabeto_publico.npz y datos listos para entrenar
 └── modelos/           modelos entrenados y .tflite
 ```
@@ -43,6 +42,4 @@ Se entrena en **Colab**: no tiene costo y los datos y modelos (LSTM y MLP) son p
 ## Firebase
 
 - Proyecto en plan **Spark**. Si pide pasar a Blaze o ingresar una tarjeta, no aceptar y avisar al equipo.
-- La app Android se registró con el paquete `com.example.app` (el `applicationId` de `app/android/app/build.gradle.kts`).
-- Cada integrante descarga su `google-services.json` en *Configuración del proyecto > Tus apps* y lo guarda en `app/android/app/`. Está en `.gitignore`, no se sube al repo ni a Drive.
-- Conectar la app con Firebase (SDK y descarga del modelo) se hace en el issue #28.
+- La app web se publica en Firebase Hosting; ver [publicar_web.md](publicar_web.md).

@@ -1,4 +1,4 @@
-/// Preferencias del usuario. Se guardan en el teléfono.
+/// Preferencias del usuario. Se guardan en el dispositivo (almacenamiento del navegador).
 class Ajustes {
   const Ajustes({
     this.tamano = 26,

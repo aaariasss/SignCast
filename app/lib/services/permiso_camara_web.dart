@@ -3,15 +3,25 @@ import 'dart:js_interop';
 import 'permiso_camara.dart';
 import 'puntos_js.dart';
 
-/// Permiso de cámara en el navegador. El navegador no deja consultarlo sin
-/// preguntar (Safari no lo permite), así que siempre se pasa por la pantalla
-/// del permiso: el botón "Permitir cámara" es el toque que Safari exige para
-/// mostrar el aviso.
+/// Permiso de cámara en el navegador. Safari no deja consultarlo sin preguntar,
+/// así que `puntos.js` usa la API de permisos cuando existe y, si no, recuerda
+/// que ya se concedió. Si no consta, se pasa por la pantalla del permiso: el
+/// botón "Permitir cámara" es el toque que Safari exige para mostrar el aviso.
 class PermisoCamaraWeb implements PermisoCamara {
   const PermisoCamaraWeb();
 
   @override
-  Future<EstadoPermiso> estado() async => EstadoPermiso.denegado;
+  Future<EstadoPermiso> estado() async {
+    try {
+      final js = await esperarPuntosJs();
+      final estado = (await js.estadoPermiso().toDart).toDart;
+      return estado == 'granted'
+          ? EstadoPermiso.concedido
+          : EstadoPermiso.denegado;
+    } catch (_) {
+      return EstadoPermiso.denegado;
+    }
+  }
 
   @override
   Future<EstadoPermiso> solicitar() async {

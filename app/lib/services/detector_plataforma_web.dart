@@ -2,7 +2,6 @@ import 'dart:async';
 import 'dart:js_interop';
 import 'dart:ui' show Size;
 
-import 'package:camera/camera.dart' show CameraImage;
 import 'package:flutter/foundation.dart';
 
 import '../models/cuadro_puntos.dart';
@@ -59,10 +58,6 @@ class DetectorPuntosWeb implements DetectorPuntos {
 
   @override
   void pausar(bool pausado) => _js?.pausar(pausado.toJS);
-
-  /// En web la imagen no pasa por Flutter: el módulo JavaScript lee el video.
-  @override
-  void procesar(CameraImage imagen, {required int rotacion}) {}
 
   @override
   Future<void> liberar() async {

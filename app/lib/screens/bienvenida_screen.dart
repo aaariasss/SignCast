@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
 
 import '../state/app_state.dart';
@@ -5,24 +6,56 @@ import '../theme/paleta.dart';
 import '../widgets/boton_primario.dart';
 import '../widgets/logo.dart';
 import '../widgets/mano_landmarks.dart';
+import '../widgets/ruta_suave.dart';
 import '../services/permiso_camara.dart';
 import 'permiso_screen.dart';
 import 'principal_screen.dart';
 
 /// Primera pantalla: marca, mano con puntos clave y botón "Comenzar".
-class BienvenidaScreen extends StatelessWidget {
+///
+/// Si la cámara ya se permitió antes, no muestra el botón: deja ver el logo un
+/// momento y pasa sola a la cámara.
+class BienvenidaScreen extends StatefulWidget {
   const BienvenidaScreen({super.key});
 
-  /// Si la cámara ya está permitida se salta la pantalla del permiso.
+  @override
+  State<BienvenidaScreen> createState() => _BienvenidaScreenState();
+}
+
+class _BienvenidaScreenState extends State<BienvenidaScreen> {
+  /// `null` mientras se revisa el permiso; `true` si ya estaba concedido
+  /// (entra sola); `false` si es la primera vez o se negó.
+  bool? _permitida;
+
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) => _revisar());
+  }
+
+  Future<void> _revisar() async {
+    final estado = await context.app.permisoCamara.estado();
+    if (!mounted) return;
+    if (estado != EstadoPermiso.concedido) {
+      setState(() => _permitida = false);
+      return;
+    }
+    setState(() => _permitida = true);
+    // Un momento para ver el logo antes de pasar a la cámara.
+    await Future<void>.delayed(const Duration(milliseconds: 1200));
+    if (!mounted) return;
+    Navigator.of(context).pushReplacement(rutaSuave<void>(const PrincipalScreen()));
+  }
+
+  /// Con "Comenzar": si la cámara ya está permitida se salta la pantalla del
+  /// permiso.
   Future<void> _continuar(BuildContext context) async {
     final navegador = Navigator.of(context);
     final estado = await context.app.permisoCamara.estado();
     final destino = estado == EstadoPermiso.concedido
         ? const PrincipalScreen()
         : const PermisoScreen();
-    navegador.pushReplacement(
-      MaterialPageRoute<void>(builder: (_) => destino),
-    );
+    navegador.pushReplacement(rutaSuave<void>(destino));
   }
 
   @override
@@ -124,11 +157,28 @@ class BienvenidaScreen extends StatelessWidget {
                   ),
                 ),
                 const SizedBox(height: 20),
-                BotonPrimario(
-                  texto: 'Comenzar',
-                  icono: Icons.chevron_right,
-                  onPressed: () => _continuar(context),
-                ),
+                // Sin botón mientras se entra sola (en web también al revisar,
+                // para que no parpadee).
+                if (_permitida == true || (kIsWeb && _permitida == null))
+                  const SizedBox(
+                    height: 56,
+                    child: Center(
+                      child: SizedBox(
+                        width: 24,
+                        height: 24,
+                        child: CircularProgressIndicator(
+                          strokeWidth: 2.5,
+                          color: Paleta.azul2,
+                        ),
+                      ),
+                    ),
+                  )
+                else
+                  BotonPrimario(
+                    texto: 'Comenzar',
+                    icono: Icons.chevron_right,
+                    onPressed: () => _continuar(context),
+                  ),
               ],
             ),
           ),

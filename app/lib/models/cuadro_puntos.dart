@@ -21,7 +21,7 @@ class CuadroPuntos {
     assert(this.cara.length == puntosCara * 3);
   }
 
-  /// Decodifica lo que manda el código nativo de Android: un solo arreglo con
+  /// Decodifica lo que manda `web/mediapipe/puntos.js`: un solo arreglo con
   /// mano izquierda, mano derecha, pose y rostro, en ese orden.
   factory CuadroPuntos.desdePlano(Float32List datos) {
     if (datos.length != longitudPlano) {
@@ -53,7 +53,7 @@ class CuadroPuntos {
   /// 478 puntos de rostro (se usan 39, ver `indicesCara`).
   static const int puntosCara = 478;
 
-  /// Largo del arreglo que manda el código nativo.
+  /// Largo del arreglo que manda `web/mediapipe/puntos.js`.
   static const int longitudPlano =
       (2 * puntosMano + puntosPose + puntosCara) * 3;
 

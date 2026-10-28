@@ -1,6 +1,6 @@
 # Formato del vector de puntos clave
 
-Este documento describe **exactamente** cómo se convierten los puntos de MediaPipe en el vector que consume el modelo. La app (Dart) debe producir los mismos números que Python; si no coinciden, el modelo funciona en la compu y falla en el teléfono.
+Este documento describe **exactamente** cómo se convierten los puntos de MediaPipe en el vector que consume el modelo. La app (Dart) debe producir los mismos números que Python; si no coinciden, el modelo funciona en la compu y falla en el navegador.
 
 Código en el que se basa este documento:
 
@@ -159,11 +159,11 @@ Para el dataset público (CICESE) la conversión usa imágenes en modo imagen, u
 
 Al cargar, se convierte a `float32` (`muestras.cargar`). Los puntos crudos se guardan en `float16`, por lo que las coordenadas ya vienen redondeadas.
 
-## 9. Notas para la app (#23 y #25)
+## 9. Notas para la app
 
 1. **Relación de aspecto.** `x` está normalizada por el ancho y `y` por el alto. Si la app procesa una imagen vertical (p. ej. 3:4 o 9:16) y el entrenamiento se hizo con webcam horizontal (4:3 o 16:9), la proporción entre `x` y `y` del vector cambia y puede degradar el modelo. Hay que definir qué resolución y orientación se usó al grabar y hacer que la app entregue una imagen equivalente (o corregir por la relación de aspecto). Hoy el `.npz` no guarda la resolución.
 2. **Sin espejo y etiqueta de mano.** Python entrega a MediaPipe la imagen sin voltear y usa la etiqueta `Left`/`Right` tal cual. La app debe seguir la misma convención. Para comprobarlo: en la compu, grabar moviendo solo la mano derecha y revisar cuál arreglo se llena (`mano_izq` o `mano_der`); la app debe llenar el mismo.
-3. **Ventana de 30 cuadros distinta en entrenamiento y en vivo.** Al entrenar, una seña de ~1.5 s se recorta y se estira/comprime a 30 cuadros; en vivo son 30 cuadros reales (~1 s a 30 fps) sin recortar. Su efecto se evalúa en #16 y #25.
+3. **Ventana de 30 cuadros distinta en entrenamiento y en vivo.** Al entrenar, una seña de ~1.5 s se recorta y se estira/comprime a 30 cuadros; en vivo son 30 cuadros reales (~1 s a 30 fps) sin recortar. Su efecto se evalúa al probar la traducción de frases continuas en vivo.
 4. **Ceros como "ausente".** El modelo ve 0.0 cuando falta una mano; la app no debe usar otro valor ni repetir el último cuadro en manos o rostro.
 
 ## 10. Cómo comprobar que Dart coincide con Python
