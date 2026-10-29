@@ -1,3 +1,4 @@
+import '../models/cuadro_puntos.dart';
 import '../models/estado_deteccion.dart';
 
 /// Lo que el reconocedor le cuenta a la interfaz.
@@ -20,10 +21,14 @@ class EventoReconocimiento {
 
 /// Contrato entre las pantallas y quien reconoce las señas.
 ///
-/// Hoy lo implementa `ReconocedorFalso`; la implementación con el modelo real
-/// cumple esta misma interfaz y las pantallas no cambian.
+/// `ReconocedorModelo` usa el modelo real; `ReconocedorFalso` inventa frases
+/// para probar la interfaz sin cámara.
 abstract class Reconocedor {
   Stream<EventoReconocimiento> get eventos;
+
+  /// Puntos de cada cuadro de cámara. Solo los usa el reconocedor real; el
+  /// falso los ignora.
+  void conectarCuadros(Stream<CuadroPuntos> cuadros);
 
   void iniciar();
 

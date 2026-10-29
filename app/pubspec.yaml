@@ -56,6 +56,7 @@ flutter:
   # Logo de SignCast. Los modelos (assets/modelos/) se agregan con el issue #25.
   assets:
     - assets/logo.png
+    - assets/modelos/
 
   # Tipografía del diseño (Plus Jakarta Sans), OPCIONAL.
   # Descarga los .ttf de https://fonts.google.com/specimen/Plus+Jakarta+Sans,

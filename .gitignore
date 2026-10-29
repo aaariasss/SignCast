@@ -1,11 +1,12 @@
 # Datos y modelos
 data/*
 !data/README.md
-modelos/
+/modelos/
 ml/mediapipe_modelos/
 app/web/mediapipe/vision_bundle.js
 app/web/mediapipe/wasm/
 app/web/mediapipe/modelos/
+app/web/litert/
 app/.firebase/
 docs/puntos_clave_app.md
 *.npz
@@ -18,6 +19,7 @@ docs/puntos_clave_app.md
 *.keras
 *.h5
 *.tflite
+app/assets/modelos/*
 !app/assets/modelos/.gitkeep
 
 # Python
