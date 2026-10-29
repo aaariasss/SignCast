@@ -30,6 +30,12 @@ El script compila con `flutter build web --release --no-web-resources-cdn` (Canv
 
 `web/sw.js` es un service worker que guarda la app, MediaPipe, LiteRT y el modelo (`modelo.tflite` y `etiquetas.txt`). Cada publicación genera una versión nueva y borra las cachés viejas. Con `flutter run` no se usa.
 
+## Voz
+
+La app lee las frases con la síntesis de voz del navegador (`flutter_tts`), en español de México; si el dispositivo no tiene esa voz usa otra variante del español. Para que suene sin internet la voz debe estar descargada en el iPhone: Ajustes > Accesibilidad > Contenido leído > Voces > Español > México.
+
+Safari no deja sonar audio hasta que el usuario toca la pantalla, así que el primer toque dentro de la app deja la voz lista.
+
 ## Instalar en el iPhone
 
 1. Abrir la URL en Safari con internet y esperar a que cargue.

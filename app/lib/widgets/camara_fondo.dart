@@ -2,7 +2,7 @@ import 'dart:async';
 import 'dart:math' as math;
 
 import 'package:camera/camera.dart';
-import 'package:flutter/foundation.dart' show kIsWeb;
+import 'package:flutter/foundation.dart' show ValueListenable, kIsWeb;
 import 'package:flutter/material.dart';
 
 import '../services/detector_puntos.dart';
@@ -20,9 +20,17 @@ import 'puntos_en_vivo.dart';
 /// cuenta y muestra el video detrás de Flutter; aquí solo se dibujan los
 /// puntos de manos, pose y rostro encima. Sin detector solo muestra la cámara.
 class CamaraFondo extends StatefulWidget {
-  const CamaraFondo({super.key, this.detector, this.mostrarFps = false});
+  const CamaraFondo({
+    super.key,
+    this.detector,
+    this.mostrarFps = false,
+    this.pausarMientras,
+  });
 
   final DetectorPuntos? detector;
+
+  /// Mientras valga `true` la detección se pausa (la cámara sigue encendida).
+  final ValueListenable<bool>? pausarMientras;
 
   /// Muestra los cuadros por segundo de la detección.
   final bool mostrarFps;
@@ -47,13 +55,20 @@ class _CamaraFondoState extends State<CamaraFondo> {
     final visible = TickerMode.valuesOf(context).enabled;
     if (visible != _visible) {
       _visible = visible;
-      widget.detector?.pausar(!visible);
+      _actualizarPausa();
     }
+  }
+
+  /// La detección corre solo si la pestaña se ve y no hay una pausa pedida.
+  void _actualizarPausa() {
+    final pausaPedida = widget.pausarMientras?.value ?? false;
+    widget.detector?.pausar(!_visible || pausaPedida);
   }
 
   @override
   void initState() {
     super.initState();
+    widget.pausarMientras?.addListener(_actualizarPausa);
     // Se espera a que la pantalla ya esté dibujada (y a que se cierre el
     // diálogo del permiso) antes de abrir la cámara.
     WidgetsBinding.instance.addPostFrameCallback((_) async {
@@ -147,6 +162,7 @@ class _CamaraFondoState extends State<CamaraFondo> {
 
   @override
   void dispose() {
+    widget.pausarMientras?.removeListener(_actualizarPausa);
     _vigilaTamano?.cancel();
     _controller?.dispose();
     super.dispose();

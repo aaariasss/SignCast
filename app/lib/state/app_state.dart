@@ -106,8 +106,11 @@ class AppState extends ChangeNotifier {
     ));
   }
 
-  Future<void> alternarVoz() =>
-      _aplicar(_ajustes.copiar(vozActiva: !_ajustes.vozActiva));
+  /// Al silenciar también se corta la frase que esté sonando.
+  Future<void> alternarVoz() {
+    if (_ajustes.vozActiva) voz.detener();
+    return _aplicar(_ajustes.copiar(vozActiva: !_ajustes.vozActiva));
+  }
 
   Future<void> cambiarOscuro(bool oscuro) =>
       _aplicar(_ajustes.copiar(oscuro: oscuro));

@@ -30,6 +30,8 @@ dependencies:
   camera: ^0.12.1
   # Guarda los ajustes (tamaño de letra, voz, tema) en el dispositivo (almacenamiento del navegador).
   shared_preferences: ^2.3.2
+  # Voz: en web usa la síntesis de voz del navegador (español de México).
+  flutter_tts: ^4.2.0
 
 dev_dependencies:
   flutter_test:

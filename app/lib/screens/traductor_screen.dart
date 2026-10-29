@@ -49,6 +49,7 @@ class _TraductorScreenState extends State<TraductorScreen> {
       children: [
         CamaraFondo(
           detector: _detector,
+          pausarMientras: app.voz.hablando,
           mostrarFps: _mostrarFps && _detector != null,
         ),
         SafeArea(
