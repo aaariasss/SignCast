@@ -46,11 +46,9 @@ test("leerEtiquetas acepta saltos de línea y espacios", () => {
 
 test("carga, predice y libera los tensores", async () => {
   const lt = litertFalso([0.1, 0.7, 0.2]);
-  const globalFetch = globalThis.fetch;
-  globalThis.fetch = async () => ({ ok: true, text: async () => "A\n_REPOSO\nHOLA\n" });
-  try {
+  {
     const motor = crearMotor(lt);
-    await motor.cargar({ urlModelo: "m.tflite", urlEtiquetas: "e.txt", urlWasm: "wasm/" });
+    await motor.cargar({ modelo: "m.tflite", etiquetas: "A\n_REPOSO\nHOLA\n", urlWasm: "wasm/" });
     assert.equal(motor.etiquetas, "A _REPOSO HOLA");
     assert.deepEqual(lt.llamadas[0], ["loadLiteRt", "wasm/"]);
     assert.deepEqual(lt.llamadas[1], ["loadAndCompile", "m.tflite", { accelerator: "wasm" }]);
@@ -60,20 +58,29 @@ test("carga, predice y libera los tensores", async () => {
     assert.ok(Math.abs(probs[1] - 0.7) < 1e-6);
     assert.deepEqual(lt.llamadas[2], ["run", [1, 30, 270]]);
     assert.equal(lt.borrados.length, 2); // la entrada y la salida
-  } finally {
-    globalThis.fetch = globalFetch;
   }
+});
+
+test("un modelo inservible no deja el motor a medias y LiteRT se carga una vez", async () => {
+  const lt = litertFalso([1]);
+  const compilar = lt.loadAndCompile;
+  let falla = true;
+  lt.loadAndCompile = async (...args) => {
+    if (falla) throw new Error("modelo corrupto");
+    return compilar(...args);
+  };
+  const motor = crearMotor(lt);
+  await assert.rejects(() => motor.cargar({ modelo: new Uint8Array(1), etiquetas: "X", urlWasm: "w" }), /corrupto/);
+  assert.equal(motor.etiquetas, "");
+  falla = false;
+  await motor.cargar({ modelo: new Uint8Array(1), etiquetas: "A B", urlWasm: "w" });
+  assert.equal(motor.etiquetas, "A B");
+  assert.equal(lt.llamadas.filter(([n]) => n === "loadLiteRt").length, 1);
 });
 
 test("rechaza ventanas de tamaño incorrecto y llamadas antes de cargar", async () => {
   const motor = crearMotor(litertFalso([1]));
   await assert.rejects(() => motor.predecir(new Float32Array(30 * 270)), /todavía no se carga/);
-  const globalFetch = globalThis.fetch;
-  globalThis.fetch = async () => ({ ok: true, text: async () => "A" });
-  try {
-    await motor.cargar({ urlModelo: "m", urlEtiquetas: "e", urlWasm: "w" });
-    await assert.rejects(() => motor.predecir(new Float32Array(10)), /Se esperaban 8100/);
-  } finally {
-    globalThis.fetch = globalFetch;
-  }
+  await motor.cargar({ modelo: "m", etiquetas: "A", urlWasm: "w" });
+  await assert.rejects(() => motor.predecir(new Float32Array(10)), /Se esperaban 8100/);
 });

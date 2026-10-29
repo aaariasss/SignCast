@@ -26,9 +26,13 @@ powershell -ExecutionPolicy Bypass -File tool\publicar_web.ps1 -SoloConstruir
 
 El script compila con `flutter build web --release --no-web-resources-cdn` (CanvasKit sale del propio sitio), genera la lista de archivos de `build/web/sw.js` con `tool/generar_sw.mjs` y publica. La vista previa dura 7 días y su URL se imprime al final.
 
+## Actualizar solo el modelo
+
+Un modelo nuevo no necesita publicar la app otra vez: ver [modelo_navegador.md](modelo_navegador.md#actualizar-el-modelo-sin-reinstalar).
+
 ## Sin internet
 
-`web/sw.js` es un service worker que guarda la app, MediaPipe, LiteRT y el modelo (`modelo.tflite` y `etiquetas.txt`). Cada publicación genera una versión nueva y borra las cachés viejas. Con `flutter run` no se usa.
+`web/sw.js` es un service worker que guarda la app, MediaPipe, LiteRT y el modelo incluido (`modelo.tflite` y `etiquetas.txt`); los modelos publicados aparte los guarda la propia app en el caché del navegador. Cada publicación genera una versión nueva y borra las cachés viejas. Con `flutter run` no se usa.
 
 ## Voz
 

@@ -20,7 +20,26 @@ Después de entrenar y exportar (ver [resultados.md](resultados.md)), copiar a `
 - `modelo.tflite`
 - `etiquetas.txt`
 
-No se suben al repo. Si cambia el modelo, el service worker lo actualiza en la siguiente publicación.
+No se suben al repo. Este es el modelo incluido con la app: se usa si todavía no se ha descargado uno publicado y no hay internet.
+
+## Actualizar el modelo sin reinstalar
+
+Un modelo nuevo se publica aparte de la app, en `modelos/<version>/` (`modelo.tflite` y `etiquetas.txt`), y `modelos/version.json` (`{ "version": "v2" }`) indica cuál está vigente. Desde `app/`:
+
+```
+powershell -ExecutionPolicy Bypass -File tool\publicar_modelo.ps1 -Version v2 -Modelo ruta\modelo.tflite -Etiquetas ruta\etiquetas.txt
+```
+
+Agregar `-Produccion` para el sitio principal. Necesita un build previo (`tool\publicar_web.ps1 -SoloConstruir`); no recompila la app. Para volver a una versión anterior se publica otra vez con su número.
+
+Al abrir la app, `web/modelo/actualizador.js`:
+
+1. Pide `modelos/version.json` (4 s de espera máximo).
+2. Si la versión es distinta de la guardada, descarga el modelo y las etiquetas, los guarda en el caché del navegador (`modelo-signcast`) y borra la versión anterior.
+3. Sin internet, o si la descarga falla, usa el último modelo guardado; si no hay, el incluido.
+4. Si el modelo no se puede cargar, borra lo guardado y usa el incluido.
+
+El service worker no toca `modelos/`. La versión en uso se ve en la consola con `signcastModelo.version` (`incluido` o la versión publicada).
 
 ## LiteRT.js
 
@@ -28,7 +47,7 @@ No se suben al repo. Si cambia el modelo, el service worker lo actualiza en la s
 
 ## Pruebas
 
-- `node --test test_js/modelo.test.mjs` (desde `app/`): carga y predicción con un LiteRT falso.
+- `node --test test_js/*.test.mjs` (desde `app/`): carga y predicción con un LiteRT falso, y elección entre modelo publicado, guardado e incluido.
 - `flutter test`: ventana temporal, decisor y reconocedor con un predictor falso.
 
 Para ver la interfaz sin modelo: `flutter run -d chrome --dart-define=DEMO=true`.
