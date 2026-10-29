@@ -42,6 +42,20 @@ Clases con más cambio de F1 entre 0 y 3 copias:
 Mejor: 3 copias.
 <!-- aumento-senas:fin -->
 
+## Clasificador del alfabeto
+
+`python -m signcast.entrenar --tarea alfabeto --persona-prueba valeria` (3 copias de aumento, semilla 42). Prueba: valeria.
+
+| Exactitud | F1 macro | Cumple meta |
+|---:|---:|:---:|
+| 0.945 | 0.943 | sí |
+
+Letras más débiles (F1): S 0.57, T 0.78, R 0.87, I 0.88, U 0.89.
+
+Confusiones más frecuentes (real → predicha): S → T (15), R → U (6), Y → I (5). Solo 10 de 25 ejemplos de S se clasifican bien; T se reconoce siempre, pero recibe las S.
+
+Limitación: S y T son las más afectadas por el aumento de datos (ver la comparación de arriba), y el resultado depende de la persona de prueba.
+
 ## Notas
 
 - Se mantiene el espejo en el alfabeto: con espejo la exactitud es 0.949 y sin él 0.932.
