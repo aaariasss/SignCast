@@ -49,7 +49,7 @@ const todos = archivos(carpeta)
   .filter(({ rel }) => !excluir.some((re) => re.test(rel)))
   .sort((a, b) => a.rel.localeCompare(b.rel));
 
-const esPesado = (rel) => /^mediapipe\/(wasm|modelos)\//.test(rel);
+const esPesado = (rel) => /^(mediapipe\/(wasm|modelos)|litert\/wasm)\//.test(rel);
 const huella = (lista) => {
   const h = createHash('sha256');
   for (const { rel, ruta } of lista) h.update(rel).update(readFileSync(ruta));
@@ -74,7 +74,7 @@ if (!texto.includes('/*__CONFIG__*/ null')) {
 writeFileSync(join(carpeta, 'sw.js'), texto.replace('/*__CONFIG__*/ null', JSON.stringify(config, null, 2)));
 
 const mb = (lista) => (lista.reduce((s, { ruta }) => s + statSync(ruta).size, 0) / 1048576).toFixed(1);
-console.log(`sw.js listo: ${app.length} archivos de la app (${mb(app)} MB) + ${pesados.length} de MediaPipe (${mb(pesados)} MB)`);
+console.log(`sw.js listo: ${app.length} archivos de la app (${mb(app)} MB) + ${pesados.length} de MediaPipe y LiteRT (${mb(pesados)} MB)`);
 
 // Avisos de cosas que dejarían la app sin funcionar sin internet.
 if (!existsSync(join(carpeta, 'canvaskit', 'canvaskit.wasm'))) {
@@ -83,6 +83,9 @@ if (!existsSync(join(carpeta, 'canvaskit', 'canvaskit.wasm'))) {
 if (!pesados.some(({ rel }) => rel.endsWith('hand_landmarker.task'))) {
   console.warn('AVISO: faltan los modelos de MediaPipe. Corre tool/preparar_mediapipe_web.ps1 y vuelve a compilar.');
 }
+if (!pesados.some(({ rel }) => rel.startsWith('litert/wasm/'))) {
+  console.warn('AVISO: faltan los archivos de LiteRT. Corre tool/preparar_litert_web.ps1 y vuelve a compilar.');
+}
 if (!app.some(({ rel }) => /modelo\.tflite$/.test(rel))) {
-  console.warn('AVISO: todavía no hay modelo.tflite en el build. Se agregará solo cuando exista en app/assets/modelos/.');
+  console.warn('AVISO: no hay modelo.tflite en el build. Copia modelo.tflite y etiquetas.txt a app/assets/modelos/ y vuelve a compilar.');
 }

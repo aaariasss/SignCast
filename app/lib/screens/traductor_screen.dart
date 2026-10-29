@@ -26,6 +26,15 @@ class _TraductorScreenState extends State<TraductorScreen> {
   late final DetectorPuntos? _detector = kIsWeb ? crearDetectorPlataforma() : null;
 
   @override
+  void initState() {
+    super.initState();
+    final detector = _detector;
+    if (detector != null) {
+      AppScope.leer(context).reconocedor.conectarCuadros(detector.cuadros);
+    }
+  }
+
+  @override
   void dispose() {
     _detector?.liberar();
     super.dispose();

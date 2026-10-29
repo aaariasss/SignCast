@@ -49,7 +49,11 @@
     * https://docs.flutter.dev/platform-integration/web/initialization
   -->
   <!-- MediaPipe web: manos, pose y rostro en el navegador. -->
+  <script type="importmap">
+    { "imports": { "@litertjs/wasm-utils": "./litert/wasm_utils.js" } }
+  </script>
   <script type="module" src="mediapipe/puntos.js"></script>
+  <script type="module" src="modelo/modelo.js"></script>
   <!-- Sin internet: sw.js guarda la app, MediaPipe y el modelo.
        Solo funciona con HTTPS (Firebase Hosting) o en localhost. -->
   <script>

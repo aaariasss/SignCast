@@ -11,7 +11,10 @@ npm install -g firebase-tools
 firebase login
 cd app
 powershell -ExecutionPolicy Bypass -File tool\preparar_mediapipe_web.ps1
+powershell -ExecutionPolicy Bypass -File tool\preparar_litert_web.ps1
 ```
+
+Y copiar `modelo.tflite` y `etiquetas.txt` del modelo entrenado a `app/assets/modelos/` (ver [modelo_navegador.md](modelo_navegador.md)).
 
 Desde `app/`:
 
@@ -25,7 +28,7 @@ El script compila con `flutter build web --release --no-web-resources-cdn` (Canv
 
 ## Sin internet
 
-`web/sw.js` es un service worker que guarda la app, MediaPipe y, cuando existan en `app/assets/modelos/`, `modelo.tflite` y `etiquetas.txt`. Cada publicación genera una versión nueva y borra las cachés viejas. Con `flutter run` no se usa.
+`web/sw.js` es un service worker que guarda la app, MediaPipe, LiteRT y el modelo (`modelo.tflite` y `etiquetas.txt`). Cada publicación genera una versión nueva y borra las cachés viejas. Con `flutter run` no se usa.
 
 ## Instalar en el iPhone
 

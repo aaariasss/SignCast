@@ -7,8 +7,9 @@
 #   powershell -ExecutionPolicy Bypass -File tool\publicar_web.ps1 -Produccion     # sitio principal (demo)
 #   powershell -ExecutionPolicy Bypass -File tool\publicar_web.ps1 -SoloConstruir  # sin publicar
 #
-# Antes de la primera vez, correr tool\preparar_mediapipe_web.ps1 (los archivos
-# de MediaPipe no están en el repo).
+# Antes de la primera vez, correr tool\preparar_mediapipe_web.ps1 y
+# tool\preparar_litert_web.ps1 (esos archivos no están en el repo), y copiar
+# modelo.tflite y etiquetas.txt a assets\modelos\.
 param(
     [switch]$Produccion,
     [switch]$SoloConstruir,
@@ -20,6 +21,15 @@ Push-Location (Join-Path $PSScriptRoot '..')
 try {
     if (-not (Test-Path 'web\mediapipe\wasm') -or -not (Test-Path 'web\mediapipe\modelos')) {
         Write-Error 'Faltan los archivos de MediaPipe. Corre primero tool\preparar_mediapipe_web.ps1'
+        exit 1
+    }
+
+    if (-not (Test-Path 'web\litert\litert.js')) {
+        Write-Error 'Faltan los archivos de LiteRT. Corre primero tool\preparar_litert_web.ps1'
+        exit 1
+    }
+    if (-not (Test-Path 'assets\modelos\modelo.tflite') -or -not (Test-Path 'assets\modelos\etiquetas.txt')) {
+        Write-Error 'Falta el modelo. Copia modelo.tflite y etiquetas.txt a app\assets\modelos\'
         exit 1
     }
 

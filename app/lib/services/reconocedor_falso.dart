@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'dart:math';
 
+import '../models/cuadro_puntos.dart';
 import '../models/estado_deteccion.dart';
 import 'frases.dart';
 import 'reconocedor.dart';
@@ -48,6 +49,9 @@ class ReconocedorFalso implements Reconocedor {
 
   @override
   Stream<EventoReconocimiento> get eventos => _controlador.stream;
+
+  @override
+  void conectarCuadros(Stream<CuadroPuntos> cuadros) {}
 
   @override
   void iniciar() {
