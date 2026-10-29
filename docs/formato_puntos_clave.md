@@ -164,7 +164,8 @@ Al cargar, se convierte a `float32` (`muestras.cargar`). Los puntos crudos se gu
 1. **Relación de aspecto.** `x` está normalizada por el ancho y `y` por el alto. Si la app procesa una imagen vertical (p. ej. 3:4 o 9:16) y el entrenamiento se hizo con webcam horizontal (4:3 o 16:9), la proporción entre `x` y `y` del vector cambia y puede degradar el modelo. Hay que definir qué resolución y orientación se usó al grabar y hacer que la app entregue una imagen equivalente (o corregir por la relación de aspecto). Hoy el `.npz` no guarda la resolución.
 2. **Sin espejo y etiqueta de mano.** Python entrega a MediaPipe la imagen sin voltear y usa la etiqueta `Left`/`Right` tal cual. La app debe seguir la misma convención. Para comprobarlo: en la compu, grabar moviendo solo la mano derecha y revisar cuál arreglo se llena (`mano_izq` o `mano_der`); la app debe llenar el mismo.
 3. **Ventana de 30 cuadros distinta en entrenamiento y en vivo.** Al entrenar, una seña de ~1.5 s se recorta y se estira/comprime a 30 cuadros; en vivo son 30 cuadros reales (~1 s a 30 fps) sin recortar. Su efecto se evalúa al probar la traducción de frases continuas en vivo.
-4. **Ceros como "ausente".** El modelo ve 0.0 cuando falta una mano; la app no debe usar otro valor ni repetir el último cuadro en manos o rostro.
+4. **Rostro en cero.** El modelo de señas no usa el rostro: el entrenamiento y `tiempo_real.py` ponen en cero las columnas 153-269 (`COLUMNAS_ROSTRO`, función `quitar_rostro`) y la app web no carga el modelo de rostro, así que también llegan en cero.
+5. **Ceros como "ausente".** El modelo ve 0.0 cuando falta una mano; la app no debe usar otro valor ni repetir el último cuadro en manos o rostro.
 
 ## 10. Cómo comprobar que Dart coincide con Python
 

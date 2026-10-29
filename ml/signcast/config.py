@@ -36,6 +36,14 @@ N_PUNTOS = 2 * PUNTOS_MANO + len(INDICES_POSE) + len(INDICES_CARA)   # 90
 N_CARACTERISTICAS = N_PUNTOS * 3                                       # 270
 N_CARACTERISTICAS_MANO = PUNTOS_MANO * 3                               # 63
 
+# Columnas del rostro dentro del vector. El modelo de señas no las usa: la app web no carga
+# el modelo de rostro y las manda en cero, así que el entrenamiento también las pone en cero.
+COLUMNAS_ROSTRO = slice(2 * PUNTOS_MANO * 3 + len(INDICES_POSE) * 3, N_CARACTERISTICAS)
+
+# Columnas que conserva la opción de modelo reducido: manos, nariz y codos (rangos [ini, fin)).
+_INI_POSE = 2 * PUNTOS_MANO * 3
+COLUMNAS_REDUCIDAS = [(0, _INI_POSE), (_INI_POSE, _INI_POSE + 3), (_INI_POSE + 9, _INI_POSE + 15)]
+
 # Modelos de MediaPipe Tasks
 URLS_MEDIAPIPE = {
     "hand_landmarker.task": "https://storage.googleapis.com/mediapipe-models/hand_landmarker/hand_landmarker/float16/latest/hand_landmarker.task",

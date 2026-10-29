@@ -25,7 +25,8 @@ RESULTADOS = C.RAIZ_REPO / "docs" / "resultados.md"
 
 
 def entrenar(tarea: str, copias: int, semilla: int, persona_prueba: list[str], epocas: int,
-             arquitectura: str) -> dict:
+             arquitectura: str, fuentes: list[str] | None = None, velocidad: bool = False,
+             reducir: bool = False) -> dict:
     """Corre `signcast.entrenar` y devuelve las métricas de prueba."""
     with tempfile.TemporaryDirectory() as tmp:
         orden = [sys.executable, "-m", "signcast.entrenar", "--tarea", tarea,
@@ -34,6 +35,12 @@ def entrenar(tarea: str, copias: int, semilla: int, persona_prueba: list[str], e
                  "--persona-prueba", *persona_prueba]
         if tarea == "senas":
             orden += ["--arquitectura", arquitectura]
+            if fuentes:
+                orden += ["--fuentes", *fuentes]
+            if velocidad:
+                orden.append("--velocidad")
+            if reducir:
+                orden.append("--reducir-columnas")
         subprocess.run(orden, check=True, cwd=C.DIR_ML)
         metricas = json.loads((Path(tmp) / "metricas.json").read_text(encoding="utf-8"))
     if "prueba" not in metricas:
@@ -100,8 +107,11 @@ def escribir_seccion(ruta: Path, marca: str, contenido: str) -> None:
 def main():
     p = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     p.add_argument("--tarea", choices=["senas", "alfabeto"], required=True)
-    p.add_argument("--arquitectura", choices=["lstm", "transformer"], default="lstm")
+    p.add_argument("--arquitectura", choices=["lstm", "transformer"], default="transformer")
     p.add_argument("--persona-prueba", nargs="+", required=True)
+    p.add_argument("--fuentes", nargs="+", help="Carpetas de data/raw a usar (solo señas)")
+    p.add_argument("--velocidad", action="store_true", help="Modelo con diferencia entre cuadros (solo señas)")
+    p.add_argument("--reducir-columnas", action="store_true", help="Modelo con manos, nariz y codos (solo señas)")
     p.add_argument("--copias", nargs="+", type=int, default=[0, 3])
     p.add_argument("--semillas", nargs="+", type=int, default=[42, 43, 44])
     p.add_argument("--epocas", type=int, default=100)
@@ -110,13 +120,15 @@ def main():
 
     resumen = {}
     for n in a.copias:
-        corridas = [entrenar(a.tarea, n, s, a.persona_prueba, a.epocas, a.arquitectura)
+        corridas = [entrenar(a.tarea, n, s, a.persona_prueba, a.epocas, a.arquitectura, a.fuentes,
+                            a.velocidad, a.reducir_columnas)
                     for s in a.semillas]
         resumen[n] = resumir(corridas)
         print(f"copias={n}: exactitud {resumen[n]['exactitud'][0]:.3f} "
               f"| F1 macro {resumen[n]['f1_macro'][0]:.3f}")
 
-    titulo = "Señas (" + a.arquitectura + ")" if a.tarea == "senas" else "Alfabeto"
+    extras = [n for n, activo in (("velocidad", a.velocidad), ("columnas reducidas", a.reducir_columnas)) if activo]
+    titulo = "Señas (" + ", ".join([a.arquitectura] + extras) + ")" if a.tarea == "senas" else "Alfabeto"
     escribir_seccion(a.salida, f"aumento-{a.tarea}",
                      seccion(f"Aumento de datos: {titulo}", a.persona_prueba, len(a.semillas), resumen))
     print(f"Mejor: {mejor(resumen)} copias. Tabla en {a.salida}")
