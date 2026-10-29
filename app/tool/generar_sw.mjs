@@ -28,6 +28,7 @@ const excluir = [
   /(^|\/)\./, // archivos ocultos
   /^firebase\.json$/,
   /^flutter_service_worker\.js$/,
+  /^modelos\//, // modelos publicados aparte: los guarda modelo/actualizador.js
   /^canvaskit\/chromium\//, // solo lo usa Chrome de escritorio
   /^canvaskit\/skwasm/, // iPhone usa canvaskit.wasm
   /^mediapipe\/wasm\/.*nosimd/, // solo para navegadores sin SIMD; iOS 16.4+ lo tiene

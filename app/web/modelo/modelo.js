@@ -5,10 +5,14 @@
 // (web/litert/) no están en el repo: se copian con app/tool/preparar_litert_web.ps1
 // y se sirven desde el propio sitio para que funcione sin internet.
 //
+// Qué modelo se carga (publicado, guardado o incluido) lo decide actualizador.js.
+//
 // Dart lo usa a través de `window.signcastModelo`.
 
 const CUADROS = 30;
 const CARACTERISTICAS = 270;
+
+import { elegirModelo, leerIncluido, olvidarGuardado } from "./actualizador.js";
 
 /** `etiquetas.txt` -> lista de glosas (una por línea o separadas por espacios). */
 export function leerEtiquetas(texto) {
@@ -27,23 +31,27 @@ function primeraSalida(salida) {
 export function crearMotor(litert) {
   let modelo = null;
   let etiquetas = [];
+  let litertListo = false;
 
   return {
     get etiquetas() {
       return etiquetas.join(" ");
     },
 
-    async cargar({ urlModelo, urlEtiquetas, urlWasm }) {
+    /**
+     * `modelo`: bytes del `.tflite` (Uint8Array) o su URL.
+     * `etiquetas`: contenido de `etiquetas.txt`.
+     */
+    async cargar({ modelo: origen, etiquetas: texto, urlWasm }) {
       if (modelo) return;
-      const [texto] = await Promise.all([
-        fetch(urlEtiquetas).then((r) => {
-          if (!r.ok) throw new Error(r.status + " " + urlEtiquetas);
-          return r.text();
-        }),
-        litert.loadLiteRt(urlWasm),
-      ]);
+      if (!litertListo) {
+        await litert.loadLiteRt(urlWasm);
+        litertListo = true;
+      }
+      // Si el modelo es inservible, `modelo` y `etiquetas` quedan como estaban.
+      const compilado = await litert.loadAndCompile(origen, { accelerator: "wasm" });
       etiquetas = leerEtiquetas(texto);
-      modelo = await litert.loadAndCompile(urlModelo, { accelerator: "wasm" });
+      modelo = compilado;
     },
 
     /** `ventana`: Float32Array de 30 × 270. Devuelve un Float32Array de probabilidades. */
@@ -73,17 +81,31 @@ export function crearMotor(litert) {
 if (typeof window !== "undefined") {
   const BASE = new URL("../", import.meta.url).href;
   let motor = null;
+  let version = "";
   window.signcastModelo = {
     async cargar() {
       if (!motor) {
         const litert = await import(BASE + "litert/litert.js");
         motor = crearMotor(litert);
       }
-      await motor.cargar({
-        urlModelo: BASE + "assets/assets/modelos/modelo.tflite",
-        urlEtiquetas: BASE + "assets/assets/modelos/etiquetas.txt",
-        urlWasm: BASE + "litert/wasm/",
-      });
+      const urlWasm = BASE + "litert/wasm/";
+      let eleccion = await elegirModelo({ base: BASE });
+      try {
+        await motor.cargar({ ...eleccion, urlWasm });
+      } catch (e) {
+        if (eleccion.origen === "incluido") throw e;
+        // El modelo publicado o guardado no sirve: se vuelve al incluido.
+        console.warn("El modelo " + eleccion.version + " no cargó; se usa el incluido.", e);
+        await olvidarGuardado();
+        eleccion = await leerIncluido({ base: BASE });
+        await motor.cargar({ ...eleccion, urlWasm });
+      }
+      version = eleccion.version;
+      console.info("Modelo de señas: " + version + " (" + eleccion.origen + ")");
+    },
+    /** Versión del modelo en uso: la publicada o "incluido". */
+    get version() {
+      return version;
     },
     predecir: (ventana) => motor.predecir(ventana),
     get etiquetas() {

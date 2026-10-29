@@ -10,7 +10,7 @@
 //  - "pesados": WASM y modelos .task de MediaPipe (~25 MB). Su nombre solo
 //    cambia si esos archivos cambian, así una versión nueva de la app no los
 //    vuelve a descargar.
-//  - "app": todo lo demás (Flutter, assets, modelo de señas). Cambia con
+//  - "app": todo lo demás (Flutter, assets, modelo incluido). Cambia con
 //    cada publicación.
 const CONFIG = /*__CONFIG__*/ null;
 const PREFIJO = 'signcast-';
@@ -79,7 +79,11 @@ if (!CONFIG) {
   self.addEventListener('fetch', (e) => {
     const req = e.request;
     if (req.method !== 'GET') return;
-    if (new URL(req.url).origin !== self.location.origin) return;
+    const destino = new URL(req.url);
+    if (destino.origin !== self.location.origin) return;
+    // Los modelos publicados (modelos/) los gestiona web/modelo/actualizador.js:
+    // si el service worker los guardara, nunca se vería una versión nueva.
+    if (destino.href.startsWith(url('modelos/'))) return;
 
     e.respondWith(
       (async () => {

@@ -15,7 +15,7 @@ flutter test            # pruebas
 
 Para ver los FPS de la detección: `flutter run -d chrome --dart-define=PUNTOS=true`.
 
-Sin modelo, o para probar la interfaz con frases inventadas: `flutter run -d chrome --dart-define=DEMO=true`. El modelo real necesita `modelo.tflite` y `etiquetas.txt` en `assets/modelos/` ([detalles](../docs/modelo_navegador.md)). Las pruebas del motor JS: `node --test test_js/modelo.test.mjs`.
+Sin modelo, o para probar la interfaz con frases inventadas: `flutter run -d chrome --dart-define=DEMO=true`. El modelo real necesita `modelo.tflite` y `etiquetas.txt` en `assets/modelos/` ([detalles](../docs/modelo_navegador.md)). Las pruebas del motor JS: `node --test test_js/*.test.mjs`. Para publicar un modelo nuevo sin recompilar la app: `tool\publicar_modelo.ps1` ([detalles](../docs/modelo_navegador.md#actualizar-el-modelo-sin-reinstalar)).
 
 ## Publicar
 
