@@ -5,12 +5,17 @@ import 'package:app/services/reconocedor.dart';
 import 'package:app/services/reconocedor_falso.dart';
 import 'package:app/services/voz.dart';
 import 'package:app/state/app_state.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 class _VozEspia implements Voz {
   final List<String> dichas = [];
   final List<double> velocidades = [];
+  int cortes = 0;
+
+  @override
+  final ValueNotifier<bool> hablando = ValueNotifier<bool>(false);
 
   @override
   Future<void> hablar(String texto, {required double velocidad}) async {
@@ -19,7 +24,10 @@ class _VozEspia implements Voz {
   }
 
   @override
-  Future<void> detener() async {}
+  Future<void> detener() async => cortes++;
+
+  @override
+  Future<void> preparar() async {}
 }
 
 const _traduciendo = EventoReconocimiento(
@@ -71,6 +79,33 @@ void main() {
 
       await app.repetir();
       expect(voz.dichas, ['No entiendo.']);
+    });
+
+    test('la velocidad elegida llega a la voz', () async {
+      final voz = _VozEspia();
+      final app = await AppState.crear(
+        reconocedor: ReconocedorFalso(),
+        voz: voz,
+      );
+
+      await app.cambiarVelocidad(0.7);
+      app.aplicarEvento(_traduciendo);
+      expect(voz.velocidades, [0.7]);
+    });
+
+    test('silenciar la voz corta la frase que está sonando', () async {
+      final voz = _VozEspia();
+      final app = await AppState.crear(
+        reconocedor: ReconocedorFalso(),
+        voz: voz,
+      );
+
+      await app.alternarVoz();
+      expect(voz.cortes, 1);
+
+      // Volver a activarla no corta nada.
+      await app.alternarVoz();
+      expect(voz.cortes, 1);
     });
 
     test('los ajustes se guardan y se recuperan', () async {

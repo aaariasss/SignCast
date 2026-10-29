@@ -1,6 +1,8 @@
+import 'package:flutter/foundation.dart' show ValueListenable;
 import 'package:flutter/material.dart';
 
 import '../models/estado_deteccion.dart';
+import '../state/app_state.dart';
 import '../theme/paleta.dart';
 import 'vidrio.dart';
 
@@ -20,10 +22,43 @@ class _PildoraEstadoState extends State<PildoraEstado>
   late final AnimationController _pulso = AnimationController(
     vsync: this,
     duration: const Duration(milliseconds: 700),
-  )..repeat(reverse: true);
+  );
+  ValueListenable<bool>? _hablando;
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    final voz = AppScope.leer(context).voz.hablando;
+    if (!identical(voz, _hablando)) {
+      _hablando?.removeListener(_ajustarPulso);
+      _hablando = voz..addListener(_ajustarPulso);
+    }
+    _ajustarPulso();
+  }
+
+  @override
+  void didUpdateWidget(PildoraEstado anterior) {
+    super.didUpdateWidget(anterior);
+    _ajustarPulso();
+  }
+
+  /// El punto solo pulsa cuando hay manos y no está sonando la voz: una
+  /// animación continua con sombra difusa sobre el video recarga al iPhone y
+  /// la voz sale entrecortada.
+  void _ajustarPulso() {
+    final mover =
+        widget.estado != EstadoDeteccion.sinManos &&
+        !(_hablando?.value ?? false);
+    if (mover) {
+      if (!_pulso.isAnimating) _pulso.repeat(reverse: true);
+    } else if (_pulso.isAnimating) {
+      _pulso.stop();
+    }
+  }
 
   @override
   void dispose() {
+    _hablando?.removeListener(_ajustarPulso);
     _pulso.dispose();
     super.dispose();
   }

@@ -7,12 +7,17 @@ import 'services/predictor_plataforma.dart';
 import 'services/reconocedor.dart';
 import 'services/reconocedor_falso.dart';
 import 'services/reconocedor_modelo.dart';
+import 'services/voz.dart';
+import 'services/voz_navegador.dart';
 import 'state/app_state.dart';
 import 'theme/paleta.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
-  final estado = await AppState.crear(reconocedor: _crearReconocedor());
+  final estado = await AppState.crear(
+    reconocedor: _crearReconocedor(),
+    voz: kIsWeb ? VozNavegador() : const VozNula(),
+  );
   runApp(SignCastApp(estado: estado));
 }
 
@@ -33,13 +38,19 @@ class SignCastApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) => AppScope(
     estado: estado,
-    // Builder: así el tema se reconstruye cuando cambian los ajustes.
-    child: Builder(
-      builder: (context) => MaterialApp(
-        debugShowCheckedModeBanner: false,
-        title: 'SignCast',
-        theme: _tema(AppScope.of(context).paleta),
-        home: const BienvenidaScreen(),
+    // Safari no deja sonar la voz hasta que el usuario toca la pantalla: el
+    // primer toque, en cualquier parte, la deja lista.
+    child: Listener(
+      behavior: HitTestBehavior.translucent,
+      onPointerUp: (_) => estado.voz.preparar(),
+      // Builder: así el tema se reconstruye cuando cambian los ajustes.
+      child: Builder(
+        builder: (context) => MaterialApp(
+          debugShowCheckedModeBanner: false,
+          title: 'SignCast',
+          theme: _tema(AppScope.of(context).paleta),
+          home: const BienvenidaScreen(),
+        ),
       ),
     ),
   );

@@ -27,16 +27,13 @@ Sin modelo, o para probar la interfaz con frases inventadas: `flutter run -d chr
 |---|---|
 | `theme/` | `paleta.dart`: colores del diseño de Figma (oscuro y claro) |
 | `models/` | `Ajustes`, `EstadoDeteccion`, `FraseHistorial` |
-| `services/` | `frases.dart` (constructor de frases), `detector_puntos.dart` y `detector_plataforma_web.dart` (MediaPipe web), `permiso_camara*.dart`, `reconocedor.dart`, `reconocedor_modelo.dart` (modelo real), `reconocedor_falso.dart`, `decisor_senas.dart`, `ventana_temporal.dart`, `predictor_*.dart` y `modelo_js.dart` (LiteRT.js), `voz.dart` |
+| `services/` | `frases.dart` (constructor de frases), `detector_puntos.dart` y `detector_plataforma_web.dart` (MediaPipe web), `permiso_camara*.dart`, `reconocedor.dart`, `reconocedor_modelo.dart` (modelo real), `reconocedor_falso.dart`, `decisor_senas.dart`, `ventana_temporal.dart`, `predictor_*.dart` y `modelo_js.dart` (LiteRT.js), `voz.dart` y `voz_navegador.dart` (síntesis de voz del navegador) |
 | `state/` | `app_state.dart`: ajustes guardados, historial y reconocimiento; `AppScope` lo reparte a los widgets |
 | `widgets/` | Piezas reutilizables: hoja de subtítulos, píldora de estado, barra inferior, etc. |
 | `screens/` | Bienvenida, permiso, principal (3 pestañas), traductor, historial, ajustes, mostrar |
 
 Fuera de `lib/`: `web/` (página, manifest, `sw.js`, `mediapipe/` y `modelo/`) y `tool/` (scripts de MediaPipe, LiteRT y de publicación).
 
-## Piezas por conectar
-
-- **Voz:** crear una clase que implemente `Voz` con la síntesis de voz del navegador y pasarla en `AppState.crear(voz: ...)`.
 
 ## Tipografía
 
