@@ -2,7 +2,7 @@ import numpy as np
 
 from signcast import config as C
 from signcast.dataset import (aumentar_manos, aumentar_secuencias, cargar_senas,
-                              dividir_por_persona, remuestrear)
+                              dividir_por_persona, remuestrear, separar_validacion_por_toma)
 from signcast.muestras import cargar, guardar
 from signcast.puntos_clave import caracteristicas_mano, caracteristicas_secuencia
 
@@ -76,3 +76,12 @@ def test_guardar_y_cargar(tmp_path):
     X, y, personas = cargar_senas(["_REPOSO", "HOLA"], raiz=tmp_path)
     assert X.shape == (1, C.LONGITUD_SECUENCIA, C.N_CARACTERISTICAS)   
     assert y.tolist() == [1]
+
+
+def test_validacion_por_toma_cubre_todas_las_clases():
+    y = np.repeat(np.arange(4), 20)
+    indices = np.arange(len(y))
+    ent, val = separar_validacion_por_toma(y, indices, 0.15)
+    assert len(val) == 12 and len(ent) == 68
+    assert set(y[val]) == {0, 1, 2, 3}
+    assert not set(ent) & set(val)

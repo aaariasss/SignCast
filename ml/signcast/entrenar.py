@@ -8,7 +8,7 @@ import numpy as np
 
 from . import config as C
 from .dataset import (aumentar_manos, aumentar_secuencias, cargar_alfabeto, cargar_senas,
-                      dividir_por_persona)
+                      dividir_por_persona, separar_validacion_por_toma)
 from .muestras import etiquetas
 
 META_EXACTITUD = 0.85
@@ -68,8 +68,14 @@ def main():
 
     i_ent, i_val, i_pru = dividir_por_persona(personas, personas_prueba=a.persona_prueba,
                                               semilla=a.semilla)
+    if a.tarea == "senas":
+        # Con pocas personas, validar por persona dejaría clases fuera.
+        i_ent, i_val = separar_validacion_por_toma(y, np.concatenate([i_ent, i_val]),
+                                                   semilla=a.semilla)
     grupos = {k: sorted(set(personas[i].tolist())) for k, i in
               (("entrenamiento", i_ent), ("validacion", i_val), ("prueba", i_pru))}
+    if a.tarea == "senas":
+        grupos["validacion"] = f"15 % de las tomas de entrenamiento, por clase ({len(i_val)} tomas)"
     print(f"{len(X)} muestras, {len(clases)} clases, {len(set(personas.tolist()))} personas")
     for k, v in grupos.items():
         print(f"  {k}: {v}")
