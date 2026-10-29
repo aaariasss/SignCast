@@ -9,6 +9,7 @@ import cv2
 import numpy as np
 
 from . import config as C
+from .dataset import quitar_rostro
 from .frases import construir_frase
 from .grabar import dibujar, texto
 from .puntos_clave import Extractor, apilar, caracteristicas_mano, caracteristicas_secuencia, mano_principal
@@ -78,7 +79,7 @@ def main():
                         ultima_glosa = comun
                         letras.clear()
             elif len(ventana) == C.LONGITUD_SECUENCIA and n % a.cada == 0:
-                x = caracteristicas_secuencia(apilar(list(ventana)))
+                x = quitar_rostro(caracteristicas_secuencia(apilar(list(ventana))))
                 glosa, prob, lat = senas(x)
                 recientes.append(glosa if prob >= a.umbral else None)
                 estable = len(recientes) == a.estables and len(set(recientes)) == 1

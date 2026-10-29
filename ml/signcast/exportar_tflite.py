@@ -19,13 +19,11 @@ def main():
     from . import modelos  # noqa: F401  
 
     modelo = keras.models.load_model(a.modelo / "modelo.keras")
-    forma = (1, *modelo.input_shape[1:])   
-
-    @tf.function(input_signature=[tf.TensorSpec(forma, tf.float32, name="entrada")])
-    def inferir(x):
-        return modelo(x, training=False)
-
-    conv = tf.lite.TFLiteConverter.from_concrete_functions([inferir.get_concrete_function()], modelo)
+    forma = (1, *modelo.input_shape[1:])
+    # Batch fijo en 1. Convertir un tf.function suelto pierde los pesos con Keras 3.
+    entrada = keras.Input(batch_shape=forma)
+    fijo = keras.Model(entrada, modelo(entrada, training=False))
+    conv = tf.lite.TFLiteConverter.from_keras_model(fijo)
     if not a.sin_cuantizar:
         conv.optimizations = [tf.lite.Optimize.DEFAULT]   
     contenido = conv.convert()

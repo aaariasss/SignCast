@@ -36,6 +36,13 @@ def recortar_activo(x: np.ndarray, margen: int = 3) -> np.ndarray:
     return x[a:b]
 
 
+def quitar_rostro(x: np.ndarray) -> np.ndarray:
+    """Pone en cero las columnas del rostro, igual que las manda la app web."""
+    x = x.copy()
+    x[..., C.COLUMNAS_ROSTRO] = 0
+    return x
+
+
 def cargar_senas(clases: list[str], raiz: Path = C.DIR_RAW, fuentes: list[str] | None = None):
     """Señas aisladas -> X (N, 30, 270), y (N,), personas (N,)."""
     indice = {c: i for i, c in enumerate(clases)}
@@ -48,7 +55,7 @@ def cargar_senas(clases: list[str], raiz: Path = C.DIR_RAW, fuentes: list[str] |
         if m.glosa not in indice:
             omitidas[m.glosa] = omitidas.get(m.glosa, 0) + 1
             continue
-        x = caracteristicas_secuencia(m.raw)
+        x = quitar_rostro(caracteristicas_secuencia(m.raw))
         if m.glosa != C.CLASE_REPOSO:
             x = recortar_activo(x)
         X.append(remuestrear(x))

@@ -33,12 +33,20 @@ def evaluar(modelo, X, y, clases: list[str]) -> dict:
 def main():
     p = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     p.add_argument("--tarea", choices=["senas", "alfabeto"], required=True)
-    p.add_argument("--arquitectura", choices=["lstm", "transformer"], default="lstm",
+    p.add_argument("--arquitectura", choices=["lstm", "transformer"], default="transformer",
                    help="Solo para --tarea senas")
     p.add_argument("--epocas", type=int, default=100)
     p.add_argument("--lote", type=int, default=32)
     p.add_argument("--copias-aumento", type=int, default=3)
     p.add_argument("--persona-prueba", nargs="*", help="Personas que van solo a prueba")
+    p.add_argument("--velocidad", action="store_true",
+                   help="El modelo recibe también la diferencia entre cuadros. Solo --tarea senas")
+    p.add_argument("--reducir-columnas", action="store_true",
+                   help="El modelo usa solo manos, nariz y codos. Solo --tarea senas")
+    p.add_argument("--sin-prueba", action="store_true",
+                   help="Entrena con todas las personas, sin conjunto de prueba (modelo final)")
+    p.add_argument("--fuentes", nargs="+",
+                   help="Carpetas de data/raw a usar, por ejemplo: equipo. Solo para --tarea senas")
     p.add_argument("--semilla", type=int, default=42)
     p.add_argument("--salida", type=Path)
     a = p.parse_args()
@@ -52,8 +60,9 @@ def main():
 
     if a.tarea == "senas":
         clases = etiquetas("senas")
-        X, y, personas = cargar_senas(clases)
-        crear = lambda: ARQUITECTURAS[a.arquitectura](len(clases))  # noqa: E731
+        X, y, personas = cargar_senas(clases, fuentes=a.fuentes)
+        crear = lambda: ARQUITECTURAS[a.arquitectura](  # noqa: E731
+            len(clases), velocidad=a.velocidad, reducir=a.reducir_columnas)
         aumentar = aumentar_secuencias
         nombre = f"senas_{a.arquitectura}"
     else:
@@ -68,6 +77,8 @@ def main():
 
     i_ent, i_val, i_pru = dividir_por_persona(personas, personas_prueba=a.persona_prueba,
                                               semilla=a.semilla)
+    if a.sin_prueba:
+        i_ent, i_val, i_pru = np.arange(len(X)), np.array([], dtype=int), np.array([], dtype=int)
     if a.tarea == "senas":
         # Con pocas personas, validar por persona dejaría clases fuera.
         i_ent, i_val = separar_validacion_por_toma(y, np.concatenate([i_ent, i_val]),
@@ -79,7 +90,7 @@ def main():
     print(f"{len(X)} muestras, {len(clases)} clases, {len(set(personas.tolist()))} personas")
     for k, v in grupos.items():
         print(f"  {k}: {v}")
-    if len(i_pru) == 0:
+    if len(i_pru) == 0 and not a.sin_prueba:
         print("No hay personas suficientes para un conjunto de prueba independiente. "
               "Las métricas de prueba no serán válidas hasta tener al menos 3 personas.")
 

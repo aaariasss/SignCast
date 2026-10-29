@@ -34,8 +34,9 @@ let ultimoTiempoVideo = -1;
 let numeroCuadro = 0;
 let ultimoProceso = 0;
 
-// El rostro es el modelo más pesado y el entrenamiento no lo usa: por defecto
-// ni se carga (sus valores quedan en NaN). Con ?concara se vuelve a activar.
+// El rostro es el modelo más pesado y el modelo de señas no lo usa (el entrenamiento
+// pone sus columnas en cero): por defecto ni se carga y sus valores quedan en NaN.
+// Con ?concara se activa solo para pruebas.
 const SIN_CARA = !new URLSearchParams(location.search).has("concara");
 // Máximo ~20 cuadros por segundo: sin tope el iPhone se calienta y baja solo.
 const INTERVALO_MIN_MS = 50;

@@ -2,7 +2,8 @@ import numpy as np
 
 from signcast import config as C
 from signcast.dataset import (aumentar_manos, aumentar_secuencias, cargar_senas,
-                              dividir_por_persona, remuestrear, separar_validacion_por_toma)
+                              dividir_por_persona, quitar_rostro, remuestrear,
+                              separar_validacion_por_toma)
 from signcast.muestras import cargar, guardar
 from signcast.puntos_clave import caracteristicas_mano, caracteristicas_secuencia
 
@@ -85,3 +86,26 @@ def test_validacion_por_toma_cubre_todas_las_clases():
     assert len(val) == 12 and len(ent) == 68
     assert set(y[val]) == {0, 1, 2, 3}
     assert not set(ent) & set(val)
+
+
+def test_quitar_rostro_deja_solo_las_columnas_del_rostro_en_cero():
+    x = caracteristicas_secuencia(raw_falso())
+    assert np.abs(x[:, C.COLUMNAS_ROSTRO]).sum() > 0
+    y = quitar_rostro(x)
+    assert (y[:, C.COLUMNAS_ROSTRO] == 0).all()
+    np.testing.assert_array_equal(y[:, :C.COLUMNAS_ROSTRO.start], x[:, :C.COLUMNAS_ROSTRO.start])
+    assert C.COLUMNAS_ROSTRO.stop == C.N_CARACTERISTICAS and C.COLUMNAS_ROSTRO.start == 153
+
+
+def test_cargar_senas_sin_rostro_y_aumento_lo_mantiene(tmp_path):
+    guardar(raw_falso(), "equipo", "aarian", ["HOLA"], raiz=tmp_path)
+    X, _, _ = cargar_senas(["_REPOSO", "HOLA"], raiz=tmp_path)
+    assert (X[..., C.COLUMNAS_ROSTRO] == 0).all() and np.abs(X[..., :153]).sum() > 0
+    A = aumentar_secuencias(X, np.random.default_rng(0))
+    assert (A[..., C.COLUMNAS_ROSTRO] == 0).all()
+
+
+def test_columnas_reducidas_son_manos_nariz_y_codos():
+    cols = [c for a, b in C.COLUMNAS_REDUCIDAS for c in range(a, b)]
+    assert len(cols) == 135 and cols == sorted(set(cols))
+    assert max(cols) < C.COLUMNAS_ROSTRO.start
