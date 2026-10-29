@@ -119,6 +119,24 @@ def dividir_por_persona(personas: np.ndarray, val: float = 0.15, prueba: float =
     return sel(en_ent), sel(en_val), sel(en_prueba)
 
 
+def separar_validacion_por_toma(y: np.ndarray, indices: np.ndarray, fraccion: float = 0.15,
+                                semilla: int = 42):
+    """Aparta una fracción de `indices` para validar, estratificada por clase.
+
+    Sirve cuando hay pocas personas: la validación por persona dejaría fuera clases
+    enteras. La prueba sigue siendo por persona; esto solo guía el entrenamiento.
+    Devuelve (entrenamiento, validación).
+    """
+    rng = np.random.default_rng(semilla)
+    val = []
+    for clase in np.unique(y[indices]):
+        de_clase = indices[y[indices] == clase]
+        n = int(round(fraccion * len(de_clase))) if len(de_clase) >= 2 else 0
+        val.extend(rng.choice(de_clase, size=n, replace=False))
+    val = np.array(sorted(val), dtype=indices.dtype)
+    return np.setdiff1d(indices, val), val
+
+
 # Aumento de datos
 def _transformar_xy(puntos: np.ndarray, rng: np.random.Generator, espejo: bool = False,
                     trasladar: bool = True):
