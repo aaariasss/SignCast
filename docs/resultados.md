@@ -67,6 +67,25 @@ Exactitud y F1: 3 copias de aumento, 3 semillas, sin opciones extra. El promedio
 
 Recomendación: Transformer. Es mejor en exactitud y F1, pesa menos y tarda la mitad. Con `--reducir-columnas` sube a 0.625 de exactitud y 0.600 de F1 con `valeria` (0.730 de promedio), y es el modelo que usa la app. Ninguno llega a la meta (85 % y 0.80).
 
+## Latencia en iPhone
+
+iPhone 14 Pro, iOS 26.6.1, Safari, modo de bajo consumo apagado y cargando. App web con el Transformer final (`senas_transformer`, 229 KB). 35 señas aisladas.
+
+| Medida | Promedio | Máximo |
+|---|---:|---:|
+| Seña → subtítulo | 412 ms | 541 ms |
+| Modelo (LiteRT.js, por predicción) | 2 ms | 3 ms |
+| MediaPipe (por cuadro) | 31 ms | 122 ms |
+| Cuadros por segundo | 20 | |
+
+Meta de menos de 500 ms: se cumple en promedio; los casos más lentos la pasan por poco (541 ms).
+
+Cómo se midió: con un recuadro temporal en la app (`?medir=1`, rama `medicion/29-no-mergear`, que no se mergea). "Seña → subtítulo" va desde el cuadro más reciente de la primera ventana en que el modelo ya reconoce la seña (probabilidad ≥ 0.75) hasta que la glosa aparece en pantalla, más lo que tardó MediaPipe en ese cuadro. No incluye el tiempo que tarda la seña en entrar a la ventana de 30 cuadros.
+
+La mayor parte de la latencia viene del decisor, no del cómputo: el modelo corre cada 3 cuadros y una glosa se acepta con 3 predicciones iguales seguidas, así que después de la primera predicción correcta faltan 6 cuadros (300 ms a 20 cuadros por segundo). El modelo tarda 2 ms y MediaPipe 31 ms. Los 20 cuadros por segundo son el tope que pone la app (`INTERVALO_MIN_MS = 50` en `web/mediapipe/puntos.js`).
+
+Si hace falta bajarla (#20): aceptar con 2 predicciones estables en lugar de 3 (unos 150 ms menos) o correr el modelo cada 2 cuadros (unos 100 ms menos). Las dos cosas pueden aumentar los falsos positivos, así que hay que revisarlas con las pruebas en aula (#30).
+
 ## Notas
 
 - Se mantiene el espejo en el alfabeto: con espejo la exactitud es 0.949 y sin él 0.932.
