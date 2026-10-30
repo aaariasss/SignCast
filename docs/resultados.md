@@ -56,6 +56,17 @@ Confusiones más frecuentes (real → predicha): S → T (15), R → U (6), Y �
 
 Limitación: S y T son las más afectadas por el aumento de datos (ver la comparación de arriba), y el resultado depende de la persona de prueba.
 
+## Señas: LSTM vs Transformer
+
+Exactitud y F1: 3 copias de aumento, 3 semillas, sin opciones extra. El promedio es de las tres personas de prueba (`valeria`, `carlo`, `aarian`). Tamaño y latencia: `.tflite` cuantizado de los modelos finales (`--sin-prueba --reducir-columnas`), medidos con `exportar_tflite.py` en la misma PC (mediana de 100).
+
+| Arquitectura | Exactitud (`valeria`) | F1 macro (`valeria`) | Exactitud promedio | Tamaño `.tflite` | Latencia en PC |
+|---|---:|---:|---:|---:|---:|
+| LSTM | 0.532 | 0.487 | 0.629 | 302 KB | 5.1 ms |
+| Transformer | 0.604 | 0.563 | 0.705 | 229 KB | 2.3 ms |
+
+Recomendación: Transformer. Es mejor en exactitud y F1, pesa menos y tarda la mitad. Con `--reducir-columnas` sube a 0.625 de exactitud y 0.600 de F1 con `valeria` (0.730 de promedio), y es el modelo que usa la app. Ninguno llega a la meta (85 % y 0.80).
+
 ## Notas
 
 - Se mantiene el espejo en el alfabeto: con espejo la exactitud es 0.949 y sin él 0.932.
