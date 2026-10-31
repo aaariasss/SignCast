@@ -1,4 +1,4 @@
-"""Muestra cuántas tomas lleva cada persona y cuáles le faltan (issues #10, #11 y #12).
+"""Muestra cuántas tomas lleva cada persona y cuáles le faltan .
 
     python -m signcast.progreso --persona valeria
     python -m signcast.progreso            # todas las personas del equipo

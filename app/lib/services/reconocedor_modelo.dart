@@ -19,7 +19,7 @@ class ReconocedorModelo implements Reconocedor {
     required this.predictor,
     DecisorSenas? decisor,
     VentanaTemporal? ventana,
-    this.cada = 3,
+    this.cada = 2,
     this.minCuadrosConMano = 5,
     this.retencionFrase = const Duration(seconds: 2),
     int Function()? reloj,

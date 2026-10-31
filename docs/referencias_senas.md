@@ -1,7 +1,7 @@
 # Referencias de las señas del vocabulario
 
 Fuente de verdad del vocabulario: `ml/vocabulario.csv`. Aquí se anota, para cada seña,
-dónde verla (video o imagen) y cómo hacerla (issues #10 y #11).
+dónde verla (video o imagen) y cómo hacerla.
 
 Las imágenes están en `docs/img/`.
 

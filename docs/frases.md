@@ -1,7 +1,7 @@
 # Frases del MVP
 
-Frases que se graban (issue #11) y se usan para probar el constructor de frases
-(`ml/signcast/frases.py` y su versión en Dart, issue #18).
+Frases que se graban y se usan para probar el constructor de frases
+(`ml/signcast/frases.py` y su versión en Dart).
 
 Reglas de escritura en comandos y glosas: mayúsculas, sin ñ y sin acentos
 (`BANO`, `MANANA`, `COMPANERO`).
