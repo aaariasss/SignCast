@@ -10,6 +10,7 @@ import numpy as np
 
 from . import config as C
 from .dataset import quitar_rostro
+from .decisor import Decisor
 from .frases import construir_frase
 from .grabar import dibujar, texto
 from .puntos_clave import Extractor, apilar, caracteristicas_mano, caracteristicas_secuencia, mano_principal
@@ -38,8 +39,8 @@ def main():
     a = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     a.add_argument("--modelo", type=Path, required=True)
     a.add_argument("--alfabeto", type=Path)
-    a.add_argument("--umbral", type=float, default=0.75)
-    a.add_argument("--cada", type=int, default=3, help="Inferir cada N cuadros")
+    a.add_argument("--umbral", type=float, default=0.8)
+    a.add_argument("--cada", type=int, default=2, help="Inferir cada N cuadros")
     a.add_argument("--estables", type=int, default=3, help="Predicciones iguales seguidas para aceptar")
     a.add_argument("--pausa-frase", type=float, default=1.2, help="Segundos de reposo que cierran la frase")
     a.add_argument("--camara", type=int, default=0)
@@ -51,10 +52,9 @@ def main():
     cap = cv2.VideoCapture(a.camara)
     cap.set(cv2.CAP_PROP_FPS, C.FPS_OBJETIVO)
     ventana: deque = deque(maxlen=C.LONGITUD_SECUENCIA)
-    recientes: deque = deque(maxlen=a.estables)
+    decisor = Decisor(a.umbral, a.estables, a.pausa_frase)
     letras: deque = deque(maxlen=12)
-    glosas: list[str] = []
-    subtitulo, ultima_glosa, inicio_reposo = "", None, None
+    subtitulo = ""
     deletreo, n, lat = False, 0, 0.0
     t0 = time.monotonic()
 
@@ -74,34 +74,26 @@ def main():
                     letra, prob, lat = alfabeto(caracteristicas_mano(mano))
                     letras.append(letra if prob >= a.umbral else None)
                     comun, veces = Counter(letras).most_common(1)[0]
-                    if comun and veces >= 10 and comun != ultima_glosa:
-                        glosas.append(comun)
-                        ultima_glosa = comun
+                    if comun and veces >= 10 and comun != decisor.ultima_glosa:
+                        decisor.glosas.append(comun)
+                        decisor.ultima_glosa = comun
                         letras.clear()
             elif len(ventana) == C.LONGITUD_SECUENCIA and n % a.cada == 0:
                 x = quitar_rostro(caracteristicas_secuencia(apilar(list(ventana))))
                 glosa, prob, lat = senas(x)
-                recientes.append(glosa if prob >= a.umbral else None)
-                estable = len(recientes) == a.estables and len(set(recientes)) == 1
-                if estable and recientes[0] == C.CLASE_REPOSO:
-                    ultima_glosa = C.CLASE_REPOSO
-                    inicio_reposo = inicio_reposo or ahora
-                elif estable and recientes[0] and recientes[0] != ultima_glosa:
-                    glosas.append(recientes[0])
-                    ultima_glosa = recientes[0]
-                    inicio_reposo = None
+                decisor.predecir(glosa, prob, ahora)
 
             # Cerrar la frase tras una pausa
-            if glosas and inicio_reposo and ahora - inicio_reposo >= a.pausa_frase:
-                subtitulo = construir_frase(glosas)
-                print(f"{' '.join(glosas):40s} -> {subtitulo}")
-                glosas, inicio_reposo = [], None
+            cerrada = decisor.cerrar_si_pausa(ahora)
+            if cerrada:
+                subtitulo = construir_frase(cerrada)
+                print(f"{' '.join(cerrada):40s} -> {subtitulo}")
 
             vista = img.copy()
             dibujar(vista, cuadro)
             vista = cv2.flip(vista, 1)
             h = vista.shape[0]
-            texto(vista, ("DELETREO  " if deletreo else "") + " ".join(glosas), 40, (0, 255, 255))
+            texto(vista, ("DELETREO  " if deletreo else "") + " ".join(decisor.glosas), 40, (0, 255, 255))
             texto(vista, f"{lat:.1f} ms", 75, escala=0.6)
             texto(vista, subtitulo, h - 30, escala=1.0)
             cv2.imshow("SignCast", vista)
@@ -110,12 +102,12 @@ def main():
             if tecla == ord("q"):
                 break
             if tecla == ord("c"):
-                glosas, subtitulo = [], ""
+                decisor.glosas, subtitulo = [], ""
             if tecla == ord("a") and alfabeto:
                 deletreo = not deletreo
                 letras.clear()
                 if not deletreo:
-                    inicio_reposo = ahora   
+                    decisor.inicio_reposo = ahora
 
     cap.release()
     cv2.destroyAllWindows()

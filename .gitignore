@@ -9,7 +9,6 @@ app/web/mediapipe/modelos/
 app/web/litert/
 app/web/modelos/
 app/.firebase/
-docs/puntos_clave_app.md
 *.npz
 *.npy
 *.mp4

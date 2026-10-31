@@ -9,7 +9,7 @@ import 'frases.dart';
 /// - la frase se cierra cuando el reposo dura al menos [pausaFrase].
 class DecisorSenas {
   DecisorSenas({
-    this.umbral = 0.75,
+    this.umbral = 0.8,
     this.estables = 3,
     this.pausaFrase = const Duration(milliseconds: 1200),
   });

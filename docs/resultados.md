@@ -80,11 +80,11 @@ iPhone 14 Pro, iOS 26.6.1, Safari, modo de bajo consumo apagado y cargando. App 
 
 Meta de menos de 500 ms: se cumple en promedio; los casos más lentos la pasan por poco (541 ms).
 
-Cómo se midió: con un recuadro temporal en la app (`?medir=1`, rama `medicion/29-no-mergear`, que no se mergea). "Seña → subtítulo" va desde el cuadro más reciente de la primera ventana en que el modelo ya reconoce la seña (probabilidad ≥ 0.75) hasta que la glosa aparece en pantalla, más lo que tardó MediaPipe en ese cuadro. No incluye el tiempo que tarda la seña en entrar a la ventana de 30 cuadros.
+Cómo se midió: con un recuadro temporal en la app (`?medir=1`), que no está en la versión publicada. "Seña → subtítulo" va desde el cuadro más reciente de la primera ventana en que el modelo ya reconoce la seña (probabilidad ≥ 0.75) hasta que la glosa aparece en pantalla, más lo que tardó MediaPipe en ese cuadro. No incluye el tiempo que tarda la seña en entrar a la ventana de 30 cuadros.
 
 La mayor parte de la latencia viene del decisor, no del cómputo: el modelo corre cada 3 cuadros y una glosa se acepta con 3 predicciones iguales seguidas, así que después de la primera predicción correcta faltan 6 cuadros (300 ms a 20 cuadros por segundo). El modelo tarda 2 ms y MediaPipe 31 ms. Los 20 cuadros por segundo son el tope que pone la app (`INTERVALO_MIN_MS = 50` en `web/mediapipe/puntos.js`).
 
-Si hace falta bajarla (#20): aceptar con 2 predicciones estables en lugar de 3 (unos 150 ms menos) o correr el modelo cada 2 cuadros (unos 100 ms menos). Las dos cosas pueden aumentar los falsos positivos, así que hay que revisarlas con las pruebas en aula (#30).
+La medición es con umbral 0.75 y el modelo cada 3 cuadros. La app ahora corre el modelo cada 2 cuadros (umbral 0.8, ver Frases continuas), con lo que la espera baja unos 100 ms; no se volvió a medir en iPhone.
 
 ## Notas
 
@@ -97,3 +97,53 @@ Si hace falta bajarla (#20): aceptar con 2 predicciones estables en lugar de 3 (
 - Transformer con 3 copias (3 semillas), según la persona de prueba: `valeria` 0.604 de exactitud y 0.563 de F1, `carlo` 0.768 y 0.713, `aarian` 0.744 y 0.669. Con una persona nueva acierta alrededor del 70 %; las señas que más fallan son K, TU, DONDE, X y J.
 - Transformer con 3 copias y 3 semillas, exactitud (F1 macro) por persona de prueba `valeria` / `carlo` / `aarian`: sin opciones 0.604 (0.563) / 0.768 (0.713) / 0.744 (0.669); con `--velocidad` 0.607 (0.574) / 0.786 (0.758) / 0.724 (0.650); con `--reducir-columnas` 0.625 (0.600) / 0.779 (0.732) / 0.786 (0.728); con ambas 0.630 (0.604) / 0.818 (0.775) / 0.750 (0.675). Promedio de las tres personas: 0.705 sin opciones, 0.706 con velocidad, 0.730 con columnas reducidas y 0.733 con ambas. Se usa `--reducir-columnas`, que mejora con las tres personas.
 - Probando con otra persona de prueba, el LSTM da 0.688 (`carlo`) y 0.667 (`aarian`): falla con cualquier persona nueva, no solo con `valeria`.
+
+<!-- frases-continuas:inicio -->
+## Frases continuas
+
+Frases correctas: **23.6%** (86 de 364 tomas) con `--umbral 0.8 --cada 2 --estables 3 --pausa-frase 0.8`. Meta: 80 %.
+
+Cada persona se evalúa con un modelo que no la vio entrenar. Se compara con `construir_frase` sobre las glosas grabadas.
+
+| Persona | Correctas |
+|---|---:|
+| aarian | 10/120 (8%) |
+| carlo | 46/124 (37%) |
+| valeria | 30/120 (25%) |
+
+Glosas reconocidas en orden: 54.9% (590 de 1074).
+
+| Frase | Correctas | Glosas reconocidas | Glosas detectadas más común al fallar |
+|---|---:|---:|---|
+| AYUDAR YO POR-FAVOR | 0/30 | 58% | AYUDAR POR-FAVOR |
+| BANO DONDE | 13/30 | 70% | BANO |
+| ENTENDER NO | 0/30 | 48% | ENTENDER |
+| HOLA HOLA _REPOSO YO NO ENTENDER GRACIAS | 2/34 | 40% | HOLA ENTENDER |
+| MAESTRO REPETIR | 22/30 | 93% | MAESTRO K |
+| MANANA EXAMEN | 16/30 | 82% | ADIOS EXAMEN |
+| MANANA YO IR CLASE | 1/30 | 38% | ADIOS CLASE |
+| REPETIR POR-FAVOR | 11/30 | 77% | REPETIR |
+| TAREA CUANDO | 11/30 | 77% | TAREA MANANA |
+| YO NO ENTENDER | 0/30 | 47% | ENTENDER |
+| YO PODER IR BANO | 0/30 | 52% | YO PODER BANO |
+| YO TENER PREGUNTA | 10/30 | 42% | (nada) |
+
+Con los valores anteriores (`--umbral 0.75 --cada 3 --estables 3 --pausa-frase 1.2`): 20.9% (76 de 364).
+
+Valores recomendados: umbral 0.8, el modelo cada 2 cuadros, 3 predicciones estables y pausa de 1.2 s (entre 0.8 y 1.5 s da el mismo resultado). `tiempo_real.py` y la app usan estos valores.
+
+Mejores combinaciones de la búsqueda:
+
+| Umbral | Cada | Estables | Pausa (s) | Correctas | % |
+|---:|---:|---:|---:|---:|---:|
+| 0.8 | 2 | 3 | 0.8 | 86/364 | 23.6% |
+| 0.8 | 2 | 3 | 1.0 | 86/364 | 23.6% |
+| 0.8 | 2 | 3 | 1.2 | 86/364 | 23.6% |
+| 0.8 | 2 | 3 | 1.5 | 86/364 | 23.6% |
+| 0.8 | 2 | 3 | 0.6 | 85/364 | 23.4% |
+| 0.85 | 2 | 3 | 0.8 | 85/364 | 23.4% |
+| 0.85 | 2 | 3 | 1.0 | 85/364 | 23.4% |
+| 0.85 | 2 | 3 | 1.2 | 85/364 | 23.4% |
+
+Omitidas por llevar deletreo (en vivo se activa con `a`): HOLA YO A N A.
+<!-- frases-continuas:fin -->

@@ -141,7 +141,7 @@ Para el dataset público (CICESE) la conversión usa imágenes en modo imagen, u
 2. `recortar_activo` (salvo `_REPOSO`): quita al inicio y al final los cuadros sin manos (suma de los primeros 126 valores = 0), dejando un margen de 3 cuadros.
 3. `remuestrear` a 30 cuadros con interpolación lineal en el tiempo: `origen = linspace(0, T-1, 30)`, entre los cuadros vecinos.
 
-**En vivo** (`tiempo_real.py`): se guardan los últimos 30 cuadros crudos, se calcula `caracteristicas_secuencia` sobre esa ventana y se infiere cada 3 cuadros.
+**En vivo** (`tiempo_real.py`): se guardan los últimos 30 cuadros crudos, se calcula `caracteristicas_secuencia` sobre esa ventana y se infiere cada 2 cuadros.
 
 ## 8. Formato de las grabaciones (`.npz`)
 

@@ -30,7 +30,7 @@ flowchart LR
 - **`app/`** (Flutter web): detecta los puntos en el navegador con el mismo vector de características que `ml/` ([docs/formato_puntos_clave.md](docs/formato_puntos_clave.md)), corre el `.tflite` con LiteRT.js y arma la frase.
 - **Firebase Hosting** sirve la app y el modelo; un service worker los guarda para usarlos sin internet. Un modelo nuevo se publica sin reinstalar la app.
 
-La app empezó como Android nativo y se pasó a web en el #47 (todo el equipo usa iPhone y no hay Mac para compilar iOS). El código de Android se quitó del repo en el PR #50; quedó como referencia en el historial de git y se recupera con `git checkout 21e7d8e^ -- app/android`.
+La app empezó como Android nativo y se pasó a web porque todo el equipo usa iPhone y no hay Mac para compilar iOS. El código de Android ya no está en el repo; se conserva en el historial de git.
 
 ## Estructura
 
