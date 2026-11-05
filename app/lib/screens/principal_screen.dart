@@ -35,6 +35,17 @@ class _PrincipalScreenState extends State<PrincipalScreen> {
     super.dispose();
   }
 
+  /// Solo el traductor reconoce y habla; en las otras pestañas se pausa.
+  void _cambiarPestana(int i) {
+    if (i == _indice) return;
+    if (i == 0) {
+      _app.reanudarReconocimiento();
+    } else if (_indice == 0) {
+      _app.pausarReconocimiento();
+    }
+    setState(() => _indice = i);
+  }
+
   @override
   Widget build(BuildContext context) {
     final inferior = MediaQuery.of(context).viewPadding.bottom;
@@ -58,7 +69,7 @@ class _PrincipalScreenState extends State<PrincipalScreen> {
             bottom: 16 + inferior,
             child: BarraInferior(
               indice: _indice,
-              onCambio: (i) => setState(() => _indice = i),
+              onCambio: _cambiarPestana,
             ),
           ),
         ],

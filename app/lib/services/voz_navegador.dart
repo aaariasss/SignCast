@@ -17,12 +17,20 @@ class VozNavegador implements Voz {
     FlutterTts? tts,
     this.pausaTrasCortar = const Duration(milliseconds: 120),
     List<VozDisponible> Function()? voces,
+    void Function()? desbloquear,
   }) : _tts = tts ?? FlutterTts(),
-       _voces = voces ?? listarVoces {
-    _tts.setStartHandler(() => _marcar(true));
+       _voces = voces ?? listarVoces,
+       _desbloquear = desbloquear ?? desbloquearSintesis {
+    _tts.setStartHandler(() {
+      _confirmada = true;
+      _marcar(true);
+    });
     _tts.setCompletionHandler(() => _marcar(false));
     _tts.setCancelHandler(() => _marcar(false));
-    _tts.setErrorHandler((_) => _marcar(false));
+    _tts.setErrorHandler((mensaje) {
+      debugPrint('Voz: el navegador no pudo hablar: $mensaje');
+      _marcar(false);
+    });
   }
 
   /// Si el navegador nunca avisa que terminó, se da por terminada la lectura
@@ -38,10 +46,15 @@ class VozNavegador implements Voz {
 
   final FlutterTts _tts;
   final List<VozDisponible> Function() _voces;
+  final void Function() _desbloquear;
   final ValueNotifier<bool> _hablando = ValueNotifier<bool>(false);
   Timer? _vencimiento;
-  Future<void>? _configuracion;
-  bool _preparada = false;
+  Future<void>? _idioma;
+  bool _vozResuelta = false;
+
+  /// `true` cuando el navegador ya empezó a hablar una frase de verdad: el
+  /// audio quedó desbloqueado y no hace falta volver a prepararlo.
+  bool _confirmada = false;
 
   @override
   ValueListenable<bool> get hablando => _hablando;
@@ -61,13 +74,8 @@ class VozNavegador implements Voz {
     );
   }
 
-  /// Elige el idioma y la voz una sola vez. Si no hay ninguna voz en español
+  /// Elige el idioma una sola vez. Si no hay ninguna voz en español
   /// disponible, deja `es-MX` y que el navegador use lo que tenga.
-  Future<void> _configurar() async {
-    await _elegirIdioma();
-    await _elegirVoz();
-  }
-
   Future<void> _elegirIdioma() async {
     for (final idioma in idiomas) {
       try {
@@ -86,9 +94,17 @@ class VozNavegador implements Voz {
   /// Si el navegador elige solo, puede escoger una voz que necesita internet
   /// y quedar en silencio sin conexión. Se escoge una voz en español que
   /// suene en el propio dispositivo, la de México primero.
+  ///
+  /// Safari llena la lista de voces después de abrir la página. Si todavía
+  /// está vacía no se da por resuelto y se vuelve a intentar en la siguiente
+  /// frase.
   Future<void> _elegirVoz() async {
+    if (_vozResuelta) return;
     try {
-      final locales = _voces().where((v) => v.local).toList();
+      final todas = _voces();
+      if (todas.isEmpty) return;
+      _vozResuelta = true;
+      final locales = todas.where((v) => v.local).toList();
       VozDisponible? elegida;
       for (final idioma in idiomas) {
         final buscado = idioma.toLowerCase();
@@ -105,22 +121,20 @@ class VozNavegador implements Voz {
           .firstOrNull;
       if (elegida == null) return;
       await _tts.setVoice({'name': elegida.nombre, 'locale': elegida.idioma});
-    } catch (_) {}
+    } catch (e) {
+      debugPrint('Voz: no se pudo elegir la voz: $e');
+    }
   }
 
   @override
   Future<void> preparar() async {
-    if (_preparada) return;
-    _preparada = true;
-    try {
-      // Frase en blanco: no suena, pero cuenta como el primer audio iniciado
-      // por un toque, que es lo que Safari exige. Va antes de cualquier
-      // `await` para seguir dentro del toque.
-      final silencio = _tts.speak(' ');
-      _configuracion ??= _configurar();
-      await silencio;
-      await _configuracion;
-    } catch (_) {}
+    if (_confirmada) return;
+    // Va primero y sin `await`: tiene que ocurrir dentro del toque.
+    _desbloquear();
+    // Pide las voces desde ya para que Safari las tenga cuando se hable.
+    _voces();
+    await (_idioma ??= _elegirIdioma());
+    await _elegirVoz();
   }
 
   @override
@@ -128,15 +142,18 @@ class VozNavegador implements Voz {
     if (texto.trim().isEmpty) return;
     _empezar(texto);
     try {
-      await (_configuracion ??= _configurar());
+      await (_idioma ??= _elegirIdioma());
+      await _elegirVoz();
       await _tts.stop();
       // Safari y Chrome se comen el inicio si se habla justo después de
       // cancelar: se espera un momento a que la cancelación termine.
       await Future<void>.delayed(pausaTrasCortar);
+      reanudarSintesis();
       // En web la velocidad es la del navegador: 1.0 es la normal.
       await _tts.setSpeechRate(velocidad);
       await _tts.speak(texto);
-    } catch (_) {
+    } catch (e) {
+      debugPrint('Voz: no se pudo hablar: $e');
       _marcar(false);
     }
   }

@@ -87,13 +87,59 @@ void main() {
     expect(de('speak'), isEmpty);
   });
 
-  test('preparar solo hace algo la primera vez', () async {
-    final voz = VozNavegador(tts: FlutterTts());
+  Future<void> aviso(String metodo) async {
+    await TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
+        .handlePlatformMessage(
+          'flutter_tts',
+          const StandardMethodCodec().encodeMethodCall(MethodCall(metodo)),
+          (_) {},
+        );
+  }
+
+  test('preparar desbloquea el audio sin pasar por el plugin', () async {
+    var desbloqueos = 0;
+    final voz = VozNavegador(
+      tts: FlutterTts(),
+      desbloquear: () => desbloqueos++,
+    );
+
+    await voz.preparar();
+
+    expect(desbloqueos, 1);
+    expect(de('speak'), isEmpty);
+  });
+
+  test('preparar se repite hasta que el navegador empieza a hablar', () async {
+    var desbloqueos = 0;
+    final voz = VozNavegador(
+      tts: FlutterTts(),
+      desbloquear: () => desbloqueos++,
+    );
 
     await voz.preparar();
     await voz.preparar();
+    expect(desbloqueos, 2);
 
-    expect(de('speak'), hasLength(1));
+    await voz.hablar('Hola.', velocidad: 1.0);
+    await aviso('speak.onStart');
+    await voz.preparar();
+
+    expect(desbloqueos, 2);
+  });
+
+  test('si no había voces, las elige en la siguiente frase', () async {
+    var lista = <VozDisponible>[];
+    final voz = VozNavegador(tts: FlutterTts(), voces: () => lista);
+
+    await voz.hablar('Uno.', velocidad: 1.0);
+    expect(de('setVoice'), isEmpty);
+
+    lista = const [
+      VozDisponible(nombre: 'Siri Voz 2', idioma: 'es_MX', local: true),
+    ];
+    await voz.hablar('Dos.', velocidad: 1.0);
+
+    expect(de('setVoice'), hasLength(1));
   });
 
   test('un fallo de la síntesis no rompe la app', () async {
@@ -107,15 +153,6 @@ void main() {
     await voz.preparar();
     await voz.detener();
   });
-
-  Future<void> aviso(String metodo) async {
-    await TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
-        .handlePlatformMessage(
-          'flutter_tts',
-          const StandardMethodCodec().encodeMethodCall(MethodCall(metodo)),
-          (_) {},
-        );
-  }
 
   test('hablando es verdadero mientras suena la frase', () async {
     final voz = VozNavegador(tts: FlutterTts());

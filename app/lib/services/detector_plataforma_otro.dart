@@ -4,3 +4,6 @@ import 'detector_puntos.dart';
 /// detección de puntos solo existe en web.
 DetectorPuntos crearDetectorPlataforma() =>
     throw UnsupportedError('La detección de puntos solo funciona en el navegador.');
+
+/// Sin navegador no hay nada que precargar.
+Future<void> precargarDetector() async {}

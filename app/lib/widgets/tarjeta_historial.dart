@@ -1,14 +1,17 @@
 import 'dart:async';
 
+import 'package:flutter/foundation.dart' show ValueListenable;
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
 import '../models/frase_historial.dart';
+import '../screens/mostrar_screen.dart';
 import '../state/app_state.dart';
 import 'boton_icono.dart';
 import 'vidrio.dart';
 
-/// Tarjeta de una frase en el historial: hora, texto, reproducir y copiar.
+/// Tarjeta de una frase en el historial: hora, texto, reproducir, mostrar en
+/// grande y copiar.
 class TarjetaHistorial extends StatefulWidget {
   const TarjetaHistorial({super.key, required this.frase});
 
@@ -20,7 +23,46 @@ class TarjetaHistorial extends StatefulWidget {
 
 class _TarjetaHistorialState extends State<TarjetaHistorial> {
   bool _copiado = false;
+  bool _sonando = false;
   Timer? _timer;
+  ValueListenable<bool>? _hablando;
+
+  /// Se queda marcado mientras suena la frase; si la voz no llega a sonar,
+  /// al menos se ve el toque un instante.
+  Future<void> _reproducir() async {
+    final app = context.app;
+    final hablando = app.voz.hablando;
+    _quitarAviso();
+    setState(() => _sonando = true);
+    final minimo = Future<void>.delayed(const Duration(milliseconds: 600));
+    await app.reproducir(widget.frase.texto);
+    await minimo;
+    if (!mounted) return;
+    if (!hablando.value) {
+      setState(() => _sonando = false);
+      return;
+    }
+    _hablando = hablando..addListener(_alCambiarVoz);
+  }
+
+  void _alCambiarVoz() {
+    if (_hablando?.value ?? false) return;
+    _quitarAviso();
+    if (mounted) setState(() => _sonando = false);
+  }
+
+  void _quitarAviso() {
+    _hablando?.removeListener(_alCambiarVoz);
+    _hablando = null;
+  }
+
+  void _mostrarGrande() {
+    Navigator.of(context).push(
+      MaterialPageRoute<void>(
+        builder: (_) => MostrarScreen(texto: widget.frase.texto),
+      ),
+    );
+  }
 
   Future<void> _copiar() async {
     await Clipboard.setData(ClipboardData(text: widget.frase.texto));
@@ -34,6 +76,7 @@ class _TarjetaHistorialState extends State<TarjetaHistorial> {
 
   @override
   void dispose() {
+    _quitarAviso();
     _timer?.cancel();
     super.dispose();
   }
@@ -41,7 +84,6 @@ class _TarjetaHistorialState extends State<TarjetaHistorial> {
   @override
   Widget build(BuildContext context) {
     final p = context.paleta;
-    final app = context.app;
     return Vidrio(
       radio: 28,
       padding: const EdgeInsets.all(18),
@@ -79,7 +121,14 @@ class _TarjetaHistorialState extends State<TarjetaHistorial> {
             BotonIcono(
               icono: Icons.play_arrow_rounded,
               etiqueta: 'Reproducir',
-              onPressed: () => app.reproducir(widget.frase.texto),
+              activo: _sonando,
+              onPressed: _reproducir,
+            ),
+            const SizedBox(width: 8),
+            BotonIcono(
+              icono: Icons.fullscreen,
+              etiqueta: 'Mostrar en grande',
+              onPressed: _mostrarGrande,
             ),
             const SizedBox(width: 8),
             BotonIcono(

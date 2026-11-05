@@ -41,6 +41,31 @@ void main() {
     expect(find.text('Activa tu cámara'), findsOneWidget);
     expect(find.textContaining('Sin la cámara'), findsOneWidget);
   });
+
+  testWidgets('la bienvenida sale siempre, aunque la cámara ya esté permitida',
+      (tester) async {
+    final estado = AppState(
+      reconocedor: ReconocedorFalso(),
+      voz: const VozNula(),
+      permisoCamara: _PermisoConcedido(),
+    );
+    await tester.pumpWidget(SignCastApp(estado: estado));
+    await tester.pump(const Duration(seconds: 3));
+
+    expect(find.text('Comenzar'), findsOneWidget);
+    expect(find.text('en palabras'), findsOneWidget);
+  });
+}
+
+class _PermisoConcedido implements PermisoCamara {
+  @override
+  Future<EstadoPermiso> estado() async => EstadoPermiso.concedido;
+
+  @override
+  Future<EstadoPermiso> solicitar() async => EstadoPermiso.concedido;
+
+  @override
+  Future<void> abrirAjustes() async {}
 }
 
 class _PermisoNegado implements PermisoCamara {
