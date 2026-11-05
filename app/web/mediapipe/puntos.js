@@ -46,7 +46,7 @@ const ultimaPose = new Float32Array(PUNTOS_POSE * 3).fill(NaN);
 const ultimoRostro = new Float32Array(PUNTOS_CARA * 3).fill(NaN);
 
 /** Carga los tres modelos. Usa la GPU y, si falla, la CPU. */
-async function cargarModelos() {
+async function cargarModelosReal() {
   if (detectores) return;
   const vision = await FilesetResolver.forVisionTasks(BASE + "wasm");
   const crear = async (gpu) => {
@@ -84,6 +84,20 @@ async function cargarModelos() {
     detectores = await crear(false);
     delegadoActual = "CPU";
   }
+}
+
+let cargaModelos = null;
+
+/** Igual que `cargarModelosReal`, pero si ya está cargando espera la misma carga. */
+function cargarModelos() {
+  if (detectores) return Promise.resolve();
+  if (!cargaModelos) {
+    cargaModelos = cargarModelosReal().catch((e) => {
+      cargaModelos = null;
+      throw e;
+    });
+  }
+  return cargaModelos;
 }
 
 // Safari no deja consultar el permiso de la cámara sin pedirlo, así que además

@@ -49,7 +49,7 @@ class ReconocedorModelo implements Reconocedor {
 
   bool _activo = false;
   bool _cargado = false;
-  bool _cargando = false;
+  Future<void>? _carga;
   bool _infiriendo = false;
   bool _hayMano = false;
   int _cuadros = 0;
@@ -96,17 +96,23 @@ class ReconocedorModelo implements Reconocedor {
     _ultimasGlosas = -1;
   }
 
-  Future<void> _cargarModelo() async {
-    if (_cargado || _cargando) return;
-    _cargando = true;
-    try {
-      await predictor.cargar();
-      _cargado = true;
-    } catch (e) {
-      debugPrint('No se pudo cargar el modelo de señas: $e');
-    } finally {
-      _cargando = false;
-    }
+  @override
+  Future<void> precargar() => _cargarModelo();
+
+  /// Carga el modelo una sola vez; quien lo pide mientras carga espera la
+  /// misma carga. Si falla, se puede volver a intentar.
+  Future<void> _cargarModelo() {
+    if (_cargado) return Future.value();
+    return _carga ??= () async {
+      try {
+        await predictor.cargar();
+        _cargado = true;
+      } catch (e) {
+        debugPrint('No se pudo cargar el modelo de señas: $e');
+      } finally {
+        _carga = null;
+      }
+    }();
   }
 
   void _alCuadro(CuadroPuntos cuadro) {

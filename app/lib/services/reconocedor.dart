@@ -30,6 +30,10 @@ abstract class Reconocedor {
   /// falso los ignora.
   void conectarCuadros(Stream<CuadroPuntos> cuadros);
 
+  /// Deja listo lo pesado (el modelo de señas) antes de abrir la cámara.
+  /// Puede llamarse varias veces; no falla si ya estaba cargado.
+  Future<void> precargar();
+
   void iniciar();
 
   void detener();

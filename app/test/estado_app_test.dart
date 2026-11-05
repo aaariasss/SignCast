@@ -64,6 +64,25 @@ void main() {
       expect(voz.dichas, ['No entiendo.']);
     });
 
+    test('en pausa no entran frases nuevas ni suena la voz', () async {
+      final voz = _VozEspia();
+      final app = await AppState.crear(
+        reconocedor: ReconocedorFalso(),
+        voz: voz,
+      );
+
+      app.pausarReconocimiento();
+      expect(voz.cortes, 1);
+
+      app.aplicarEvento(_traduciendo);
+      expect(app.historial, isEmpty);
+      expect(voz.dichas, isEmpty);
+
+      app.reanudarReconocimiento();
+      app.aplicarEvento(_traduciendo);
+      expect(voz.dichas, ['No entiendo.']);
+    });
+
     test('con la voz apagada no lee solo, pero Repetir sí', () async {
       final voz = _VozEspia();
       final app = await AppState.crear(

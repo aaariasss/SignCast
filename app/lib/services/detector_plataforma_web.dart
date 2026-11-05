@@ -68,3 +68,9 @@ class DetectorPuntosWeb implements DetectorPuntos {
 }
 
 DetectorPuntos crearDetectorPlataforma() => DetectorPuntosWeb();
+
+/// Descarga y prepara los modelos de MediaPipe sin abrir la cámara.
+Future<void> precargarDetector() async {
+  final js = await esperarPuntosJs();
+  await js.cargarModelos().toDart;
+}

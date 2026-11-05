@@ -1,8 +1,7 @@
 import 'dart:async';
 import 'dart:math' as math;
 
-import 'package:camera/camera.dart';
-import 'package:flutter/foundation.dart' show ValueListenable, kIsWeb;
+import 'package:flutter/foundation.dart' show ValueListenable;
 import 'package:flutter/material.dart';
 
 import '../services/detector_puntos.dart';
@@ -16,9 +15,9 @@ import 'puntos_en_vivo.dart';
 /// Si la cámara no abre (permiso negado, equipo sin cámara) muestra el fondo
 /// oscuro del diseño con un aviso.
 ///
-/// Si se da un [detector], el detector (MediaPipe web) abre la cámara por su
-/// cuenta y muestra el video detrás de Flutter; aquí solo se dibujan los
-/// puntos de manos, pose y rostro encima. Sin detector solo muestra la cámara.
+/// El [detector] (MediaPipe web) abre la cámara por su cuenta y muestra el
+/// video detrás de Flutter; aquí solo se dibujan los puntos de manos, pose y
+/// rostro encima.
 class CamaraFondo extends StatefulWidget {
   const CamaraFondo({
     super.key,
@@ -40,7 +39,6 @@ class CamaraFondo extends StatefulWidget {
 }
 
 class _CamaraFondoState extends State<CamaraFondo> {
-  CameraController? _controller;
   String? _error;
   bool _videoWebListo = false;
   bool _visible = true;
@@ -73,55 +71,9 @@ class _CamaraFondoState extends State<CamaraFondo> {
     // diálogo del permiso) antes de abrir la cámara.
     WidgetsBinding.instance.addPostFrameCallback((_) async {
       await Future<void>.delayed(const Duration(milliseconds: 600));
-      if (mounted) _arrancar();
+      if (mounted) _iniciarWeb();
     });
   }
-
-  /// Abre la cámara frontal con el paquete `camera` (solo cuando no hay
-  /// detector). Si la primera apertura falla, por ejemplo justo después de
-  /// aceptar el permiso, se reintenta unas veces antes de mostrar el error.
-  Future<void> _iniciarCamara({int intentos = 3}) async {
-    for (var i = 1; i <= intentos; i++) {
-      CameraController? controller;
-      try {
-        final camaras = await availableCameras();
-        final frontal = camaras.firstWhere(
-          (c) => c.lensDirection == CameraLensDirection.front,
-          orElse: () => camaras.first,
-        );
-        controller = CameraController(
-          frontal,
-          ResolutionPreset.medium,
-          enableAudio: false,
-        );
-        await controller.initialize();
-        if (!mounted) {
-          await controller.dispose();
-          return;
-        }
-        setState(() {
-          _controller = controller;
-          _error = null;
-        });
-        return;
-      } catch (e) {
-        debugPrint('Cámara: intento $i de $intentos falló: $e');
-        try {
-          await controller?.dispose();
-        } catch (_) {}
-        if (!mounted) return;
-        if (i == intentos) {
-          setState(() => _error = e.toString());
-        } else {
-          await Future<void>.delayed(const Duration(milliseconds: 800));
-        }
-      }
-    }
-  }
-
-  /// En web la cámara la abre el detector (JavaScript) y Flutter solo muestra
-  /// el video.
-  bool get _usaVideoWeb => kIsWeb && widget.detector != null;
 
   Future<void> _iniciarWeb() async {
     try {
@@ -147,30 +99,20 @@ class _CamaraFondoState extends State<CamaraFondo> {
     }
   }
 
-  void _arrancar() {
-    if (_usaVideoWeb) {
-      _iniciarWeb();
-    } else {
-      _iniciarCamara();
-    }
-  }
-
   void _reintentar() {
     setState(() => _error = null);
-    _arrancar();
+    _iniciarWeb();
   }
 
   @override
   void dispose() {
     widget.pausarMientras?.removeListener(_actualizarPausa);
     _vigilaTamano?.cancel();
-    _controller?.dispose();
     super.dispose();
   }
 
   @override
   Widget build(BuildContext context) {
-    final controller = _controller;
     final tamanoWeb = widget.detector?.tamanoVideo;
     final Widget fondo;
     if (_videoWebListo &&
@@ -199,17 +141,6 @@ class _CamaraFondoState extends State<CamaraFondo> {
             ),
           );
         },
-      );
-    } else if (controller != null && controller.value.isInitialized) {
-      fondo = SizedBox.expand(
-        child: FittedBox(
-          fit: BoxFit.cover,
-          child: SizedBox(
-            width: controller.value.previewSize!.height,
-            height: controller.value.previewSize!.width,
-            child: CameraPreview(controller),
-          ),
-        ),
       );
     } else {
       fondo = GestureDetector(

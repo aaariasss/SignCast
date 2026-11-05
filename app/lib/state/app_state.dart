@@ -6,6 +6,8 @@ import 'package:shared_preferences/shared_preferences.dart';
 import '../models/ajustes.dart';
 import '../models/estado_deteccion.dart';
 import '../models/frase_historial.dart';
+import '../services/barra_navegador.dart';
+import '../services/detector_plataforma.dart';
 import '../services/permiso_camara.dart';
 import '../services/permiso_camara_plataforma.dart';
 import '../services/reconocedor.dart';
@@ -55,6 +57,7 @@ class AppState extends ChangeNotifier {
   String _fraseActual = '';
   final List<FraseHistorial> _historial = [];
   StreamSubscription<EventoReconocimiento>? _suscripcion;
+  bool _pausado = false;
 
   Ajustes get ajustes => _ajustes;
   EstadoDeteccion get estado => _estado;
@@ -76,6 +79,7 @@ class AppState extends ChangeNotifier {
           .toDouble(),
       oscuro: p.getBool(_kOscuro) ?? true,
     );
+    pintarBarraNavegador(paleta.lienzo);
   }
 
   Future<void> _guardar() async {
@@ -89,6 +93,7 @@ class AppState extends ChangeNotifier {
 
   Future<void> _aplicar(Ajustes nuevos) async {
     _ajustes = nuevos;
+    pintarBarraNavegador(paleta.lienzo);
     notifyListeners();
     await _guardar();
   }
@@ -115,8 +120,27 @@ class AppState extends ChangeNotifier {
   Future<void> cambiarOscuro(bool oscuro) =>
       _aplicar(_ajustes.copiar(oscuro: oscuro));
 
+  /// Deja listo todo lo pesado antes de abrir la cámara: el modelo de señas y
+  /// los modelos de MediaPipe. Los fallos se anotan y no se propagan: la
+  /// pantalla del traductor avisa si algo no cargó.
+  Future<void> precargar() async {
+    Future<void> seguro(Future<void> Function() carga, String que) async {
+      try {
+        await carga();
+      } catch (e) {
+        debugPrint('No se pudo precargar $que: $e');
+      }
+    }
+
+    await Future.wait([
+      seguro(reconocedor.precargar, 'el modelo de señas'),
+      seguro(precargarDetector, 'MediaPipe'),
+    ]);
+  }
+
   /// Empieza a escuchar al reconocedor. Se llama al entrar a la app principal.
   void iniciarReconocimiento() {
+    _pausado = false;
     _suscripcion ??= reconocedor.eventos.listen(aplicarEvento);
     reconocedor.iniciar();
   }
@@ -126,8 +150,25 @@ class AppState extends ChangeNotifier {
     voz.detener();
   }
 
+  /// Al salir del traductor (historial, ajustes) deja de reconocer y de hablar:
+  /// la cámara sigue encendida, pero no debe salir ninguna frase nueva ni
+  /// seguir sonando la voz.
+  void pausarReconocimiento() {
+    _pausado = true;
+    reconocedor.detener();
+    voz.detener();
+  }
+
+  /// Al volver al traductor empieza a reconocer desde cero.
+  void reanudarReconocimiento() {
+    if (!_pausado) return;
+    _pausado = false;
+    reconocedor.iniciar();
+  }
+
   /// Procesa un evento del reconocedor. Es público para poder probarlo.
   void aplicarEvento(EventoReconocimiento evento) {
+    if (_pausado) return;
     _estado = evento.estado;
     _glosas = evento.glosas;
     final frase = evento.frase;

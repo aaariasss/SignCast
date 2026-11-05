@@ -54,6 +54,9 @@ class ReconocedorFalso implements Reconocedor {
   void conectarCuadros(Stream<CuadroPuntos> cuadros) {}
 
   @override
+  Future<void> precargar() async {}
+
+  @override
   void iniciar() {
     detener();
     _etapa = _Etapa.reposo;

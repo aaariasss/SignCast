@@ -6,15 +6,20 @@ import '../widgets/boton_icono.dart';
 
 /// Frase en pantalla completa, para enseñársela a otra persona.
 /// Siempre en claro, con letra grande (68 px con el tamaño por defecto).
+///
+/// Sin [texto] muestra la frase actual; con [texto], esa frase (por ejemplo
+/// una del historial).
 class MostrarScreen extends StatelessWidget {
-  const MostrarScreen({super.key});
+  const MostrarScreen({super.key, this.texto});
+
+  final String? texto;
 
   static const Color _tinta = Color(0xFF0B1020);
 
   @override
   Widget build(BuildContext context) {
     final app = context.app;
-    final frase = app.fraseActual;
+    final frase = texto ?? app.fraseActual;
     // 26 px de ajuste -> ~68 px aquí; crece y baja junto con el ajuste.
     final tamano = (app.ajustes.tamano * 2.6).clamp(44.0, 96.0).toDouble();
     return Scaffold(
@@ -45,7 +50,9 @@ class MostrarScreen extends StatelessWidget {
                     etiqueta: app.ajustes.vozActiva
                         ? 'Reproducir frase'
                         : 'Voz desactivada',
-                    onPressed: app.ajustes.vozActiva ? app.repetir : null,
+                    onPressed: app.ajustes.vozActiva
+                        ? () => app.reproducir(frase)
+                        : null,
                   ),
                 ],
               ),
@@ -104,7 +111,7 @@ class MostrarScreen extends StatelessWidget {
                 width: double.infinity,
                 height: 56,
                 child: FilledButton.icon(
-                  onPressed: frase.isEmpty ? null : app.repetir,
+                  onPressed: frase.isEmpty ? null : () => app.reproducir(frase),
                   style: FilledButton.styleFrom(
                     backgroundColor: _tinta,
                     foregroundColor: Colors.white,

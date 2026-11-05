@@ -1,4 +1,3 @@
-import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
 
 import '../state/app_state.dart';
@@ -11,10 +10,12 @@ import '../services/permiso_camara.dart';
 import 'permiso_screen.dart';
 import 'principal_screen.dart';
 
-/// Primera pantalla: marca, mano con puntos clave y botón "Comenzar".
+/// Primera pantalla: marca, mano con puntos clave y botón "Comenzar". Se
+/// muestra siempre al entrar a la app.
 ///
-/// Si la cámara ya se permitió antes, no muestra el botón: deja ver el logo un
-/// momento y pasa sola a la cámara.
+/// Mientras se ve, la app descarga los modelos; con "Comenzar" espera a que
+/// todo esté listo (y deja la voz desbloqueada con ese toque) antes de pasar a
+/// la cámara.
 class BienvenidaScreen extends StatefulWidget {
   const BienvenidaScreen({super.key});
 
@@ -23,35 +24,34 @@ class BienvenidaScreen extends StatefulWidget {
 }
 
 class _BienvenidaScreenState extends State<BienvenidaScreen> {
-  /// `null` mientras se revisa el permiso; `true` si ya estaba concedido
-  /// (entra sola); `false` si es la primera vez o se negó.
-  bool? _permitida;
+  /// Tiempo máximo que se espera la carga antes de pasar de todos modos.
+  static const Duration _espera = Duration(seconds: 40);
+
+  Future<void>? _precarga;
+  bool _preparando = false;
 
   @override
   void initState() {
     super.initState();
-    WidgetsBinding.instance.addPostFrameCallback((_) => _revisar());
+    _precarga = AppScope.leer(context).precargar();
   }
 
-  Future<void> _revisar() async {
-    final estado = await context.app.permisoCamara.estado();
-    if (!mounted) return;
-    if (estado != EstadoPermiso.concedido) {
-      setState(() => _permitida = false);
-      return;
-    }
-    setState(() => _permitida = true);
-    // Un momento para ver el logo antes de pasar a la cámara.
-    await Future<void>.delayed(const Duration(milliseconds: 1200));
-    if (!mounted) return;
-    Navigator.of(context).pushReplacement(rutaSuave<void>(const PrincipalScreen()));
-  }
-
-  /// Con "Comenzar": si la cámara ya está permitida se salta la pantalla del
-  /// permiso.
+  /// Con "Comenzar": espera a que los modelos estén cargados y la voz lista y
+  /// recién entonces sigue. Si la cámara ya está permitida se salta la pantalla
+  /// del permiso.
   Future<void> _continuar(BuildContext context) async {
+    if (_preparando) return;
+    final app = context.app;
     final navegador = Navigator.of(context);
-    final estado = await context.app.permisoCamara.estado();
+    setState(() => _preparando = true);
+    // `voz.preparar()` va sin `await` antes: tiene que ocurrir dentro del toque.
+    final voz = app.voz.preparar();
+    await Future.wait([
+      (_precarga ?? Future<void>.value()).timeout(_espera, onTimeout: () {}),
+      voz,
+    ]);
+    final estado = await app.permisoCamara.estado();
+    if (!mounted) return;
     final destino = estado == EstadoPermiso.concedido
         ? const PrincipalScreen()
         : const PermisoScreen();
@@ -157,20 +157,26 @@ class _BienvenidaScreenState extends State<BienvenidaScreen> {
                   ),
                 ),
                 const SizedBox(height: 20),
-                // Sin botón mientras se entra sola (en web también al revisar,
-                // para que no parpadee).
-                if (_permitida == true || (kIsWeb && _permitida == null))
-                  const SizedBox(
+                if (_preparando)
+                  SizedBox(
                     height: 56,
-                    child: Center(
-                      child: SizedBox(
-                        width: 24,
-                        height: 24,
-                        child: CircularProgressIndicator(
-                          strokeWidth: 2.5,
-                          color: Paleta.azul2,
+                    child: Row(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        const SizedBox(
+                          width: 24,
+                          height: 24,
+                          child: CircularProgressIndicator(
+                            strokeWidth: 2.5,
+                            color: Paleta.azul2,
+                          ),
                         ),
-                      ),
+                        const SizedBox(width: 12),
+                        Text(
+                          'Preparando…',
+                          style: TextStyle(color: p.tenue, fontSize: 15),
+                        ),
+                      ],
                     ),
                   )
                 else
