@@ -13,11 +13,7 @@ import '../services/caracteristicas.dart';
 /// [espejo] voltea el dibujo en horizontal; la vista previa de la cámara
 /// frontal se ve como espejo y los puntos vienen de la imagen sin voltear.
 class PuntosEnVivo extends StatefulWidget {
-  const PuntosEnVivo({
-    super.key,
-    required this.cuadros,
-    this.espejo = true,
-  });
+  const PuntosEnVivo({super.key, required this.cuadros, this.espejo = true});
 
   final Stream<CuadroPuntos> cuadros;
   final bool espejo;
@@ -45,11 +41,11 @@ class _PuntosEnVivoState extends State<PuntosEnVivo> {
 
   @override
   Widget build(BuildContext context) => IgnorePointer(
-        child: CustomPaint(
-          painter: _PuntosPainter(_ultimo, widget.espejo),
-          size: Size.infinite,
-        ),
-      );
+    child: CustomPaint(
+      painter: _PuntosPainter(_ultimo, widget.espejo),
+      size: Size.infinite,
+    ),
+  );
 }
 
 class _PuntosPainter extends CustomPainter {
@@ -107,7 +103,8 @@ class _PuntosPainter extends CustomPainter {
       final o = punto(cuadro.pose, i);
       if (o != null) canvas.drawCircle(o, 4, verde);
     }
-    final hi = punto(cuadro.pose, hombroIzq), hd = punto(cuadro.pose, hombroDer);
+    final hi = punto(cuadro.pose, hombroIzq),
+        hd = punto(cuadro.pose, hombroDer);
     if (hi != null && hd != null) {
       canvas.drawLine(hi, hd, verde..strokeWidth = 2);
     }

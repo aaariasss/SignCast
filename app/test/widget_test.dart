@@ -6,8 +6,9 @@ import 'package:app/state/app_state.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 void main() {
-  testWidgets('la bienvenida lleva a la pantalla del permiso de cámara',
-      (tester) async {
+  testWidgets('la bienvenida lleva a la pantalla del permiso de cámara', (
+    tester,
+  ) async {
     final estado = AppState(
       reconocedor: ReconocedorFalso(),
       voz: const VozNula(),
@@ -24,8 +25,9 @@ void main() {
     expect(find.text('Permitir cámara'), findsOneWidget);
   });
 
-  testWidgets('si se niega el permiso se queda en la pantalla del permiso',
-      (tester) async {
+  testWidgets('si se niega el permiso se queda en la pantalla del permiso', (
+    tester,
+  ) async {
     final estado = AppState(
       reconocedor: ReconocedorFalso(),
       voz: const VozNula(),
@@ -42,19 +44,21 @@ void main() {
     expect(find.textContaining('Sin la cámara'), findsOneWidget);
   });
 
-  testWidgets('la bienvenida sale siempre, aunque la cámara ya esté permitida',
-      (tester) async {
-    final estado = AppState(
-      reconocedor: ReconocedorFalso(),
-      voz: const VozNula(),
-      permisoCamara: _PermisoConcedido(),
-    );
-    await tester.pumpWidget(SignCastApp(estado: estado));
-    await tester.pump(const Duration(seconds: 3));
+  testWidgets(
+    'la bienvenida sale siempre, aunque la cámara ya esté permitida',
+    (tester) async {
+      final estado = AppState(
+        reconocedor: ReconocedorFalso(),
+        voz: const VozNula(),
+        permisoCamara: _PermisoConcedido(),
+      );
+      await tester.pumpWidget(SignCastApp(estado: estado));
+      await tester.pump(const Duration(seconds: 3));
 
-    expect(find.text('Comenzar'), findsOneWidget);
-    expect(find.text('en palabras'), findsOneWidget);
-  });
+      expect(find.text('Comenzar'), findsOneWidget);
+      expect(find.text('en palabras'), findsOneWidget);
+    },
+  );
 }
 
 class _PermisoConcedido implements PermisoCamara {

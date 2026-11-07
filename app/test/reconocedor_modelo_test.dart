@@ -95,28 +95,31 @@ void main() {
     await cuadros.close();
   });
 
-  test('sin manos en la ventana no corre el modelo y cuenta como reposo', () async {
-    final predictor = _PredictorFalso()..actual = 1; // diría HOLA
-    var ms = 0;
-    final cuadros = StreamController<CuadroPuntos>.broadcast(sync: true);
-    final r = ReconocedorModelo(predictor: predictor, reloj: () => ms);
-    final eventos = <EventoReconocimiento>[];
-    r.eventos.listen(eventos.add);
-    r.conectarCuadros(cuadros.stream);
-    r.iniciar();
-    await pumpEventQueue();
-
-    for (var i = 0; i < 60; i++) {
-      ms += 33;
-      cuadros.add(CuadroPuntos());
+  test(
+    'sin manos en la ventana no corre el modelo y cuenta como reposo',
+    () async {
+      final predictor = _PredictorFalso()..actual = 1; // diría HOLA
+      var ms = 0;
+      final cuadros = StreamController<CuadroPuntos>.broadcast(sync: true);
+      final r = ReconocedorModelo(predictor: predictor, reloj: () => ms);
+      final eventos = <EventoReconocimiento>[];
+      r.eventos.listen(eventos.add);
+      r.conectarCuadros(cuadros.stream);
+      r.iniciar();
       await pumpEventQueue();
-    }
-    expect(predictor.llamadas, 0);
-    expect(eventos.every((e) => e.glosas.isEmpty), isTrue);
 
-    await r.liberar();
-    await cuadros.close();
-  });
+      for (var i = 0; i < 60; i++) {
+        ms += 33;
+        cuadros.add(CuadroPuntos());
+        await pumpEventQueue();
+      }
+      expect(predictor.llamadas, 0);
+      expect(eventos.every((e) => e.glosas.isEmpty), isTrue);
+
+      await r.liberar();
+      await cuadros.close();
+    },
+  );
 
   test('detenido no procesa cuadros', () async {
     final predictor = _PredictorFalso();

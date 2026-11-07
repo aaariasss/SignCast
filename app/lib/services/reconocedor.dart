@@ -26,6 +26,11 @@ class EventoReconocimiento {
 abstract class Reconocedor {
   Stream<EventoReconocimiento> get eventos;
 
+  /// Con el deletreo activo se reconocen letras sueltas del alfabeto con la
+  /// mano quieta, en lugar de señas con movimiento.
+  bool get deletreo;
+  set deletreo(bool activo);
+
   /// Puntos de cada cuadro de cámara. Solo los usa el reconocedor real; el
   /// falso los ignora.
   void conectarCuadros(Stream<CuadroPuntos> cuadros);

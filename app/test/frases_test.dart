@@ -40,16 +40,13 @@ void main() {
   });
 
   test('limpiar quita repeticiones', () {
-    expect(
-      limpiar(['HOLA', 'HOLA', 'HOLA', 'TAREA']),
-      ['HOLA', 'TAREA'],
-    );
+    expect(limpiar(['HOLA', 'HOLA', 'HOLA', 'TAREA']), ['HOLA', 'TAREA']);
   });
 
   test('deletreo separado por reposo', () {
-    expect(
-      unirDeletreo(['A', 'N', 'A', '_REPOSO', 'L', 'U', 'Z']),
-      ['#Ana', '#Luz'],
-    );
+    expect(unirDeletreo(['A', 'N', 'A', '_REPOSO', 'L', 'U', 'Z']), [
+      '#Ana',
+      '#Luz',
+    ]);
   });
 }

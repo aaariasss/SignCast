@@ -67,10 +67,7 @@ class _PrincipalScreenState extends State<PrincipalScreen> {
             left: 20,
             right: 20,
             bottom: 16 + inferior,
-            child: BarraInferior(
-              indice: _indice,
-              onCambio: _cambiarPestana,
-            ),
+            child: BarraInferior(indice: _indice, onCambio: _cambiarPestana),
           ),
         ],
       ),

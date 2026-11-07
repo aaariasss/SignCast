@@ -1,10 +1,12 @@
 import 'dart:async';
+import 'dart:math' as math;
 
 import 'package:flutter/foundation.dart';
 
 import '../models/cuadro_puntos.dart';
 import '../models/estado_deteccion.dart';
 import 'caracteristicas.dart';
+import 'clasificador_alfabeto.dart';
 import 'decisor_senas.dart';
 import 'frases.dart';
 import 'predictor_senas.dart';
@@ -22,6 +24,7 @@ class ReconocedorModelo implements Reconocedor {
     this.cada = 2,
     this.minCuadrosConMano = 5,
     this.retencionFrase = const Duration(seconds: 2),
+    this.cargarAlfabeto,
     int Function()? reloj,
   }) : _decisor = decisor ?? DecisorSenas(),
        _ventana = ventana ?? VentanaTemporal(),
@@ -39,6 +42,27 @@ class ReconocedorModelo implements Reconocedor {
   /// Cuánto se deja visible "Traduciendo" antes de volver a "Detectando".
   final Duration retencionFrase;
 
+  /// Carga el clasificador del alfabeto para el deletreo. Sin él, el deletreo
+  /// no hace nada.
+  final Future<ClasificadorAlfabeto?> Function()? cargarAlfabeto;
+
+  /// Una letra del deletreo se acepta cuando, en los últimos [ventanaLetraMs],
+  /// la misma letra sale en al menos [mayoriaLetra] de las lecturas y la mano
+  /// lleva al menos [sostenerLetraMs] así. Se mide en tiempo y no en cuadros
+  /// para que no dependa de los FPS, y así las posturas intermedias al cambiar
+  /// de letra no alcanzan a contar.
+  static const int ventanaLetraMs = 700;
+  static const int sostenerLetraMs = 600;
+  static const double mayoriaLetra = 0.85;
+
+  /// En el deletreo, el modelo de señas solo puede aportar una letra con
+  /// movimiento (J, K, Ñ, Q, X, Z) si en los últimos [cuadrosMovimiento] de la
+  /// ventana la mano se movió o cambió de forma al menos [movimientoMinimo]
+  /// veces su tamaño. Si está quieta, la letra es del alfabeto estático (la N
+  /// quieta, por ejemplo, el modelo de señas la confunde con K y Ñ).
+  static const int cuadrosMovimiento = 10;
+  static const double movimientoMinimo = 0.4;
+
   final DecisorSenas _decisor;
   final VentanaTemporal _ventana;
   final int Function() _reloj;
@@ -47,6 +71,9 @@ class ReconocedorModelo implements Reconocedor {
       StreamController<EventoReconocimiento>.broadcast();
   StreamSubscription<CuadroPuntos>? _suscripcion;
 
+  ClasificadorAlfabeto? _alfabeto;
+  final List<(int, String?)> _letras = [];
+  bool _deletreo = false;
   bool _activo = false;
   bool _cargado = false;
   Future<void>? _carga;
@@ -56,6 +83,18 @@ class ReconocedorModelo implements Reconocedor {
   int _retenerHasta = 0;
   EstadoDeteccion? _ultimoEstado;
   int _ultimasGlosas = -1;
+
+  @override
+  bool get deletreo => _deletreo;
+
+  @override
+  set deletreo(bool activo) {
+    if (activo == _deletreo) return;
+    _deletreo = activo;
+    _letras.clear();
+    // Al salir del deletreo la frase se cierra tras la pausa.
+    if (!activo) _decisor.iniciarReposo(_reloj());
+  }
 
   @override
   Stream<EventoReconocimiento> get eventos => _controlador.stream;
@@ -89,6 +128,7 @@ class ReconocedorModelo implements Reconocedor {
 
   void _reiniciar() {
     _decisor.reiniciar();
+    _letras.clear();
     _ventana.limpiar();
     _cuadros = 0;
     _retenerHasta = 0;
@@ -109,6 +149,11 @@ class ReconocedorModelo implements Reconocedor {
         _cargado = true;
       } catch (e) {
         debugPrint('No se pudo cargar el modelo de señas: $e');
+      }
+      try {
+        _alfabeto ??= await cargarAlfabeto?.call();
+      } catch (e) {
+        debugPrint('No se pudo cargar el clasificador del alfabeto: $e');
       } finally {
         _carga = null;
       }
@@ -122,9 +167,13 @@ class ReconocedorModelo implements Reconocedor {
     _ventana.agregar(ahora, cuadro);
     _cuadros++;
 
+    // En el deletreo las letras quietas las pone el clasificador del alfabeto y
+    // las que llevan movimiento (J, K, Ñ, Q, X, Z) el modelo de señas.
+    final deletreando = _deletreo && _alfabeto != null;
+    if (deletreando) _deletrear(manoPrincipal(cuadro), ahora);
     if (_cargado && !_infiriendo && _cuadros % cada == 0) {
       final muestra = _ventana.muestrear();
-      if (muestra != null) _inferir(muestra);
+      if (muestra != null) _inferir(muestra, soloLetras: deletreando);
     }
 
     final cerradas = _decisor.cerrarFrase(ahora);
@@ -135,18 +184,111 @@ class ReconocedorModelo implements Reconocedor {
     }
   }
 
-  Future<void> _inferir(List<CuadroPuntos> muestra) async {
+  /// Deletreo: con la mano principal de este cuadro se clasifica una letra y se
+  /// acepta cuando la mano la sostiene (ver [sostenerLetraMs]).
+  /// Sin mano cuenta como reposo, así la frase se cierra tras la pausa.
+  void _deletrear(Float32List mano, int ahora) {
+    if (mano.every((v) => v.isNaN)) {
+      _decisor.iniciarReposo(ahora);
+      return;
+    }
+    _decisor.cancelarReposo();
+    final vector = caracteristicasMano(mano);
+    if (vector.every((v) => v == 0)) return;
+
+    final alfabeto = _alfabeto!;
+    final probs = alfabeto.predecir(vector);
+    var mejor = 0;
+    for (var i = 1; i < probs.length; i++) {
+      if (probs[i] > probs[mejor]) mejor = i;
+    }
+    final letra = probs[mejor] >= _decisor.umbral
+        ? alfabeto.etiquetas[mejor]
+        : null;
+    _letras.add((ahora, letra));
+    _letras.removeWhere((l) => ahora - l.$1 > ventanaLetraMs);
+    if (ahora - _letras.first.$1 < sostenerLetraMs) return;
+
+    // La más repetida; si empatan, la que apareció primero.
+    final cuentas = <String?, int>{};
+    for (final l in _letras) {
+      cuentas[l.$2] = (cuentas[l.$2] ?? 0) + 1;
+    }
+    String? comun;
+    var veces = 0;
+    for (final e in cuentas.entries) {
+      if (e.value > veces) {
+        comun = e.key;
+        veces = e.value;
+      }
+    }
+    if (comun != null &&
+        veces >= mayoriaLetra * _letras.length &&
+        _decisor.agregarGlosa(comun)) {
+      _letras.clear();
+    }
+  }
+
+  /// Cuánto se movió o cambió de forma la mano principal en los últimos
+  /// [cuadrosMovimiento] cuadros de [muestra], en tamaños de mano (la muñeca
+  /// respecto al último cuadro y los puntos ya normalizados por la muñeca).
+  double _movimiento(List<CuadroPuntos> muestra) {
+    final ultimos = muestra.length > cuadrosMovimiento
+        ? muestra.sublist(muestra.length - cuadrosMovimiento)
+        : muestra;
+    final manos = <Float32List>[];
+    for (final c in ultimos) {
+      final m = manoPrincipal(c);
+      if (!m.any((v) => v.isNaN)) manos.add(m);
+    }
+    if (manos.length < 4) return 0;
+
+    final ref = manos.last;
+    var tamano = 0.0;
+    for (var i = 0; i < puntosMano; i++) {
+      final dx = ref[i * 3] - ref[0];
+      final dy = ref[i * 3 + 1] - ref[1];
+      tamano = math.max(tamano, math.sqrt(dx * dx + dy * dy));
+    }
+    if (tamano < 1e-6) return 0;
+
+    final vectorRef = caracteristicasMano(ref);
+    var mayor = 0.0;
+    for (final m in manos) {
+      final dx = m[0] - ref[0];
+      final dy = m[1] - ref[1];
+      mayor = math.max(mayor, math.sqrt(dx * dx + dy * dy) / tamano);
+      final v = caracteristicasMano(m);
+      for (var i = 0; i < puntosMano; i++) {
+        mayor = math.max(mayor, (v[i * 3] - vectorRef[i * 3]).abs());
+        mayor = math.max(mayor, (v[i * 3 + 1] - vectorRef[i * 3 + 1]).abs());
+      }
+    }
+    return mayor;
+  }
+
+  /// Con [soloLetras] solo cuentan las predicciones de letras (etiquetas de un
+  /// carácter); palabras y reposo se ignoran porque el reposo lo lleva
+  /// [_deletrear].
+  Future<void> _inferir(
+    List<CuadroPuntos> muestra, {
+    bool soloLetras = false,
+  }) async {
     _infiriendo = true;
     try {
       final conMano = muestra.where((c) => c.hayMano).length;
       if (conMano < minCuadrosConMano) {
-        _decisor.predecir(claseReposo, 1.0, _reloj());
+        if (!soloLetras) _decisor.predecir(claseReposo, 1.0, _reloj());
         return;
       }
       final filas = caracteristicasSecuencia(muestra);
       final plano = Float32List(longitudSecuencia * nCaracteristicas);
       for (var i = 0; i < filas.length; i++) {
-        plano.setRange(i * nCaracteristicas, (i + 1) * nCaracteristicas, filas[i]);
+        plano.setRange(
+          i * nCaracteristicas,
+          (i + 1) * nCaracteristicas,
+          filas[i],
+        );
       }
       final probs = await predictor.predecir(plano);
       if (!_activo) return;
@@ -158,7 +300,13 @@ class ReconocedorModelo implements Reconocedor {
       final etiquetas = predictor.etiquetas;
       if (mejor >= etiquetas.length) return;
       final ahora = _reloj();
-      if (_decisor.predecir(etiquetas[mejor], probs[mejor], ahora)) {
+      var prob = probs[mejor];
+      if (soloLetras &&
+          (etiquetas[mejor].length != 1 ||
+              _movimiento(muestra) < movimientoMinimo)) {
+        prob = 0;
+      }
+      if (_decisor.predecir(etiquetas[mejor], prob, ahora)) {
         _emitirEstado(ahora);
       }
     } catch (e) {

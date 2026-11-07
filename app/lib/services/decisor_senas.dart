@@ -58,6 +58,23 @@ class DecisorSenas {
     return false;
   }
 
+  /// Agrega una glosa que se decidió por otro camino (el deletreo). Devuelve
+  /// `false` si es la misma que la anterior.
+  bool agregarGlosa(String glosa) {
+    if (glosa == _ultima) return false;
+    _glosas.add(glosa);
+    _ultima = glosa;
+    _inicioReposoMs = null;
+    _recientes.clear();
+    return true;
+  }
+
+  /// Empieza a contar el reposo que cierra la frase (si ya contaba, sigue).
+  void iniciarReposo(int ms) => _inicioReposoMs ??= ms;
+
+  /// Deja de contar el reposo.
+  void cancelarReposo() => _inicioReposoMs = null;
+
   /// Si la pausa ya duró lo suficiente, devuelve las glosas de la frase y
   /// empieza una nueva; si no, `null`.
   List<String>? cerrarFrase(int ms) {
@@ -66,6 +83,7 @@ class DecisorSenas {
     if (ms - inicio < pausaFrase.inMilliseconds) return null;
     final cerradas = List<String>.of(_glosas);
     _glosas.clear();
+    _ultima = claseReposo;
     _inicioReposoMs = null;
     return cerradas;
   }
