@@ -233,28 +233,24 @@ class _GuiaEncuadre extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) => IgnorePointer(
-        child: LayoutBuilder(
-          builder: (context, caja) => Padding(
-            padding: EdgeInsets.fromLTRB(
-              42,
-              caja.maxHeight * .16,
-              42,
-              caja.maxHeight * .35,
-            ),
-            child: const Stack(
-              children: [
-                Positioned.fill(
-                  child: Esquinas(
-                    color: Color(0x99FFFFFF),
-                    largo: 42,
-                    radio: 8,
-                  ),
-                ),
-              ],
-            ),
-          ),
+    child: LayoutBuilder(
+      builder: (context, caja) => Padding(
+        padding: EdgeInsets.fromLTRB(
+          42,
+          caja.maxHeight * .16,
+          42,
+          caja.maxHeight * .35,
         ),
-      );
+        child: const Stack(
+          children: [
+            Positioned.fill(
+              child: Esquinas(color: Color(0x99FFFFFF), largo: 42, radio: 8),
+            ),
+          ],
+        ),
+      ),
+    ),
+  );
 }
 
 /// Cuenta cuántos cuadros con puntos llegan por segundo. Va fuera de la
@@ -296,20 +292,20 @@ class _ContadorFpsState extends State<_ContadorFps> {
 
   @override
   Widget build(BuildContext context) => DecoratedBox(
-        decoration: BoxDecoration(
-          color: const Color(0x99000000),
-          borderRadius: BorderRadius.circular(8),
+    decoration: BoxDecoration(
+      color: const Color(0x99000000),
+      borderRadius: BorderRadius.circular(8),
+    ),
+    child: Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+      child: Text(
+        '$_fps FPS',
+        style: const TextStyle(
+          color: Color(0xFFFFFFFF),
+          fontSize: 14,
+          fontWeight: FontWeight.w700,
         ),
-        child: Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-          child: Text(
-            '$_fps FPS',
-            style: const TextStyle(
-              color: Color(0xFFFFFFFF),
-              fontSize: 14,
-              fontWeight: FontWeight.w700,
-            ),
-          ),
-        ),
-      );
+      ),
+    ),
+  );
 }

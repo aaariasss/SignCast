@@ -13,18 +13,21 @@ void main() {
       expect(v.muestrear(), isNull);
     });
 
-    test('reparte en 30 posiciones los cuadros de una cámara a 20 por segundo', () {
-      final v = VentanaTemporal();
-      final cuadros = [for (var i = 0; i < 30; i++) CuadroPuntos()];
-      for (var i = 0; i < cuadros.length; i++) {
-        v.agregar(i * 50, cuadros[i]);
-      }
-      final m = v.muestrear()!;
-      expect(m.length, longitudSecuencia);
-      expect(identical(m.last, cuadros.last), isTrue);
-      // Primer instante: 1450 - 29 × 33.3 ≈ 483 ms → cuadro de 450 ms.
-      expect(identical(m.first, cuadros[9]), isTrue);
-    });
+    test(
+      'reparte en 30 posiciones los cuadros de una cámara a 20 por segundo',
+      () {
+        final v = VentanaTemporal();
+        final cuadros = [for (var i = 0; i < 30; i++) CuadroPuntos()];
+        for (var i = 0; i < cuadros.length; i++) {
+          v.agregar(i * 50, cuadros[i]);
+        }
+        final m = v.muestrear()!;
+        expect(m.length, longitudSecuencia);
+        expect(identical(m.last, cuadros.last), isTrue);
+        // Primer instante: 1450 - 29 × 33.3 ≈ 483 ms → cuadro de 450 ms.
+        expect(identical(m.first, cuadros[9]), isTrue);
+      },
+    );
 
     test('olvida lo que pasó hace más de la memoria', () {
       final v = VentanaTemporal(memoriaMs: 1000);

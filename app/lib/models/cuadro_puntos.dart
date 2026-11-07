@@ -11,10 +11,10 @@ class CuadroPuntos {
     Float32List? manoDer,
     Float32List? pose,
     Float32List? cara,
-  })  : manoIzq = manoIzq ?? _vacio(puntosMano),
-        manoDer = manoDer ?? _vacio(puntosMano),
-        pose = pose ?? _vacio(puntosPose),
-        cara = cara ?? _vacio(puntosCara) {
+  }) : manoIzq = manoIzq ?? _vacio(puntosMano),
+       manoDer = manoDer ?? _vacio(puntosMano),
+       pose = pose ?? _vacio(puntosPose),
+       cara = cara ?? _vacio(puntosCara) {
     assert(this.manoIzq.length == puntosMano * 3);
     assert(this.manoDer.length == puntosMano * 3);
     assert(this.pose.length == puntosPose * 3);

@@ -144,9 +144,10 @@ Float32List caracteristicasMano(Float32List mano) {
 /// De las dos manos del cuadro, la de mayor área de caja. Si no hay ninguna,
 /// una mano toda en `NaN`.
 Float32List manoPrincipal(CuadroPuntos cuadro) {
-  final candidatas = [cuadro.manoIzq, cuadro.manoDer]
-      .where((m) => !m.every((v) => v.isNaN))
-      .toList();
+  final candidatas = [
+    cuadro.manoIzq,
+    cuadro.manoDer,
+  ].where((m) => !m.every((v) => v.isNaN)).toList();
   if (candidatas.isEmpty) {
     return Float32List(nCaracteristicasMano)
       ..fillRange(0, nCaracteristicasMano, double.nan);

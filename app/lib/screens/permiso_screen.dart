@@ -78,7 +78,8 @@ class _PermisoScreenState extends State<PermisoScreen>
   void _entrar() {
     if (_entro) return;
     _entro = true;
-    Navigator.of(context).pushReplacement(rutaSuave<void>(const PrincipalScreen()));
+    Navigator.of(context)
+        .pushReplacement(rutaSuave<void>(const PrincipalScreen()));
   }
 
   @override
@@ -233,35 +234,35 @@ class _IlustracionCamara extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) => SizedBox(
-        height: 190,
-        child: Center(
-          child: SizedBox(
-            width: 174,
-            height: 144,
-            child: Stack(
-              children: [
-                Positioned.fill(
-                  child: Vidrio(
-                    radio: 28,
-                    desenfoque: 22,
-                    child: const Center(
-                      child: Icon(
-                        Icons.photo_camera_outlined,
-                        size: 42,
-                        color: Paleta.azul2,
-                      ),
-                    ),
+    height: 190,
+    child: Center(
+      child: SizedBox(
+        width: 174,
+        height: 144,
+        child: Stack(
+          children: [
+            Positioned.fill(
+              child: Vidrio(
+                radio: 28,
+                desenfoque: 22,
+                child: const Center(
+                  child: Icon(
+                    Icons.photo_camera_outlined,
+                    size: 42,
+                    color: Paleta.azul2,
                   ),
                 ),
-                const Positioned.fill(
-                  child: Padding(
-                    padding: EdgeInsets.all(14),
-                    child: Esquinas(color: Paleta.azul2, largo: 24, radio: 8),
-                  ),
-                ),
-              ],
+              ),
             ),
-          ),
+            const Positioned.fill(
+              child: Padding(
+                padding: EdgeInsets.all(14),
+                child: Esquinas(color: Paleta.azul2, largo: 24, radio: 8),
+              ),
+            ),
+          ],
         ),
-      );
+      ),
+    ),
+  );
 }

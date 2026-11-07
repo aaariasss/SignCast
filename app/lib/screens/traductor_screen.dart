@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import '../services/detector_plataforma.dart';
 import '../services/detector_puntos.dart';
 import '../state/app_state.dart';
+import '../widgets/boton_icono.dart';
 import '../widgets/camara_fondo.dart';
 import '../widgets/hoja_subtitulos.dart';
 import '../widgets/logo.dart';
@@ -23,7 +24,9 @@ class TraductorScreen extends StatefulWidget {
 
 class _TraductorScreenState extends State<TraductorScreen> {
   // La detección de puntos solo existe en el navegador.
-  late final DetectorPuntos? _detector = kIsWeb ? crearDetectorPlataforma() : null;
+  late final DetectorPuntos? _detector = kIsWeb
+      ? crearDetectorPlataforma()
+      : null;
 
   @override
   void initState() {
@@ -74,7 +77,21 @@ class _TraductorScreenState extends State<TraductorScreen> {
                       ),
                     ],
                   ),
-                  PildoraEstado(estado: app.estado),
+                  Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      BotonIcono(
+                        icono: Icons.abc,
+                        etiqueta: app.deletreo
+                            ? 'Desactivar deletreo'
+                            : 'Activar deletreo',
+                        activo: app.deletreo,
+                        onPressed: app.alternarDeletreo,
+                      ),
+                      const SizedBox(width: 8),
+                      PildoraEstado(estado: app.estado),
+                    ],
+                  ),
                 ],
               ),
             ),

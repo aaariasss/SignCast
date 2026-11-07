@@ -51,11 +51,11 @@ void main() {
       .toList();
 
   CuadroPuntos cuadro(Map<String, dynamic> j, int t) => CuadroPuntos(
-        manoIzq: _puntos(j['mano_izq'], CuadroPuntos.puntosMano),
-        manoDer: _puntos(j['mano_der'], CuadroPuntos.puntosMano),
-        pose: _puntos(j['pose'], CuadroPuntos.puntosPose),
-        cara: cara[t],
-      );
+    manoIzq: _puntos(j['mano_izq'], CuadroPuntos.puntosMano),
+    manoDer: _puntos(j['mano_der'], CuadroPuntos.puntosMano),
+    pose: _puntos(j['pose'], CuadroPuntos.puntosPose),
+    cara: cara[t],
+  );
 
   group('constantes', () {
     test('mismas dimensiones que config.py', () {

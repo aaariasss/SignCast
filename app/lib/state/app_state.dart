@@ -66,6 +66,14 @@ class AppState extends ChangeNotifier {
   List<FraseHistorial> get historial => List.unmodifiable(_historial);
   Paleta get paleta => _ajustes.oscuro ? Paleta.oscura : Paleta.clara;
 
+  /// Si está activo, se reconocen letras sueltas del alfabeto en lugar de señas.
+  bool get deletreo => reconocedor.deletreo;
+
+  void alternarDeletreo() {
+    reconocedor.deletreo = !reconocedor.deletreo;
+    notifyListeners();
+  }
+
   void _cargar() {
     final p = _prefs;
     if (p == null) return;
@@ -98,17 +106,21 @@ class AppState extends ChangeNotifier {
     await _guardar();
   }
 
-  Future<void> cambiarTamano(double valor) => _aplicar(_ajustes.copiar(
-        tamano: valor.clamp(Ajustes.tamanoMin, Ajustes.tamanoMax).toDouble(),
-      ));
+  Future<void> cambiarTamano(double valor) => _aplicar(
+    _ajustes.copiar(
+      tamano: valor.clamp(Ajustes.tamanoMin, Ajustes.tamanoMax).toDouble(),
+    ),
+  );
 
   Future<void> cambiarVelocidad(double valor) {
     final redondeada = (valor * 10).round() / 10;
-    return _aplicar(_ajustes.copiar(
-      velocidadVoz: redondeada
-          .clamp(Ajustes.velocidadMin, Ajustes.velocidadMax)
-          .toDouble(),
-    ));
+    return _aplicar(
+      _ajustes.copiar(
+        velocidadVoz: redondeada
+            .clamp(Ajustes.velocidadMin, Ajustes.velocidadMax)
+            .toDouble(),
+      ),
+    );
   }
 
   /// Al silenciar también se corta la frase que esté sonando.
@@ -203,11 +215,8 @@ class AppState extends ChangeNotifier {
 
 /// Hace llegar el [AppState] a cualquier widget.
 class AppScope extends InheritedNotifier<AppState> {
-  const AppScope({
-    super.key,
-    required AppState estado,
-    required super.child,
-  }) : super(notifier: estado);
+  const AppScope({super.key, required AppState estado, required super.child})
+    : super(notifier: estado);
 
   /// Lee el estado y reconstruye el widget cuando cambia.
   static AppState of(BuildContext context) {

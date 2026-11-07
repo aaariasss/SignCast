@@ -47,6 +47,14 @@ class ReconocedorFalso implements Reconocedor {
   int _visibles = 0;
   List<String> _actual = const [];
 
+  bool _deletreo = false;
+
+  @override
+  bool get deletreo => _deletreo;
+
+  @override
+  set deletreo(bool activo) => _deletreo = activo;
+
   @override
   Stream<EventoReconocimiento> get eventos => _controlador.stream;
 

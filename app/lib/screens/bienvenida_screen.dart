@@ -115,9 +115,9 @@ class _BienvenidaScreenState extends State<BienvenidaScreen> {
                 ),
                 ShaderMask(
                   blendMode: BlendMode.srcIn,
-                  shaderCallback: (rect) => const LinearGradient(
-                    colors: [Paleta.azul, Paleta.cian],
-                  ).createShader(rect),
+                  shaderCallback: (rect) =>
+                      const LinearGradient(colors: [Paleta.azul, Paleta.cian])
+                          .createShader(rect),
                   child: const Text(
                     'en palabras',
                     textAlign: TextAlign.center,
@@ -201,19 +201,19 @@ class _Punto extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) => Container(
-        width: activo ? 22 : 6,
-        height: 6,
-        decoration: BoxDecoration(
-          borderRadius: BorderRadius.circular(99),
-          color: activo ? Paleta.azul : const Color(0x38FFFFFF),
-          boxShadow: activo
-              ? [
-                  BoxShadow(
-                    color: Paleta.azul.withValues(alpha: .45),
-                    blurRadius: 10,
-                  ),
-                ]
-              : null,
-        ),
-      );
+    width: activo ? 22 : 6,
+    height: 6,
+    decoration: BoxDecoration(
+      borderRadius: BorderRadius.circular(99),
+      color: activo ? Paleta.azul : const Color(0x38FFFFFF),
+      boxShadow: activo
+          ? [
+              BoxShadow(
+                color: Paleta.azul.withValues(alpha: .45),
+                blurRadius: 10,
+              ),
+            ]
+          : null,
+    ),
+  );
 }

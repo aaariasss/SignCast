@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/foundation.dart' show kIsWeb;
 
 import 'screens/bienvenida_screen.dart';
+import 'services/clasificador_alfabeto.dart';
 import 'services/predictor_plataforma.dart';
 import 'services/reconocedor.dart';
 import 'services/reconocedor_falso.dart';
@@ -27,7 +28,10 @@ const bool _demo = bool.fromEnvironment('DEMO');
 /// El modelo real corre solo en el navegador; en las demás plataformas (y en
 /// modo demo) se usan frases de prueba.
 Reconocedor _crearReconocedor() => kIsWeb && !_demo
-    ? ReconocedorModelo(predictor: crearPredictorPlataforma())
+    ? ReconocedorModelo(
+        predictor: crearPredictorPlataforma(),
+        cargarAlfabeto: cargarAlfabetoIncluido,
+      )
     : ReconocedorFalso();
 
 class SignCastApp extends StatelessWidget {
