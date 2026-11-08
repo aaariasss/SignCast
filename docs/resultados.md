@@ -169,3 +169,17 @@ Las letras que más fallaron (J, K y X) son las mismas que más fallan en la eva
 
 Las frases en aula (92.3 %) no se comparan directamente con Frases continuas (23.6 %). Esa medición es más estricta: usa videos grabados de corrido, sin ver el subtítulo, y cada persona se prueba con un modelo que no la vio entrenar. En el aula se usa el modelo final, la persona ve el resultado en vivo y son 13 frases de una sola persona.
 <!-- prueba-aula:fin -->
+
+
+## Usabilidad (SUS)
+
+| Persona | Puntaje |
+|---|---|
+| 1 | 90 |
+| 2 | 95 |
+| 3 | 82.5 |
+| 4 | 75 |
+| **Promedio** | **85.6** (meta ≥ 68) |
+
+Nota: muestra pequeña (n=4), cuestionario SUS estándar de 10 preguntas.
+
