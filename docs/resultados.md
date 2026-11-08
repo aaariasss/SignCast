@@ -147,3 +147,25 @@ Mejores combinaciones de la búsqueda:
 
 Omitidas por llevar deletreo (en vivo se activa con `a`): HOLA YO A N A.
 <!-- frases-continuas:fin -->
+
+<!-- prueba-aula:inicio -->
+## Evaluación en aula
+
+Prueba del 7 de noviembre de 2026 con la app web en un iPhone 14 Pro, hecha por una persona externa al equipo. Se cuenta el acierto al primer intento, en señas y en frases.
+
+| Métrica | Resultado | Meta | Cumple |
+|---|---:|---:|:---:|
+| Exactitud en señas aisladas (letras y palabras) | 81.5 % (44/54) | ≥ 85 % | no |
+| Letras | 88.9 % (24/27) | ≥ 85 % | sí |
+| Palabras | 74.1 % (20/27) | ≥ 85 % | no |
+| F1 promedio por clase (letras) | ≈ 0.90 | ≥ 0.80 | sí |
+| Frases correctas | 92.3 % (12/13) | ≥ 80 % | sí |
+
+Letras con más de un intento: J (14), K (4) y X (2). Palabras con más de un intento: EXAMEN (7), QUE (4), REPETIR (3), y AYUDAR, PODER, BANO y CUANDO (2 cada una).
+
+El F1 es una estimación solo de las letras, hecha con las confusiones observadas (J → X, K → Z, X → Q). No se midió el F1 de las palabras.
+
+Las letras que más fallaron (J, K y X) son las mismas que más fallan en la evaluación del modelo (ver Notas).
+
+Las frases en aula (92.3 %) no se comparan directamente con Frases continuas (23.6 %). Esa medición es más estricta: usa videos grabados de corrido, sin ver el subtítulo, y cada persona se prueba con un modelo que no la vio entrenar. En el aula se usa el modelo final, la persona ve el resultado en vivo y son 13 frases de una sola persona.
+<!-- prueba-aula:fin -->
